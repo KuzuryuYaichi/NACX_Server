@@ -361,3 +361,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/NACX_Server/boost
+/NACX_Server/XDMA_PCIE/XDMA_PCIE.pro

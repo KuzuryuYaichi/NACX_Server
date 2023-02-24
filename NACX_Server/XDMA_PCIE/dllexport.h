@@ -15,7 +15,7 @@ EXPORT void RegisterCallBackZC(P_ZCDATA_CALLBACK pfunc);
 
 EXPORT int StopCallbackFunc();
 
-EXPORT void WriteStreamCmd(char* cmd);
+EXPORT void WriteStreamCmd(char* cmd, size_t totalLen, int channel);
 
 EXPORT void WriteStreamSample(char* sample, size_t totalLen);
 

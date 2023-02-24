@@ -52,12 +52,12 @@ int StopCallbackFunc()
 	return 0;
 }
 
-void WriteStreamCmd(char* cmd)
+void WriteStreamCmd(char* cmd, size_t totalLen, int channel)
 {
-	size_t totalLen = 32, offset = 0;
+	size_t offset = 0;
 	while (totalLen > 0)
 	{
-		auto len = pdev->write_to_engine(cmd + offset, totalLen, 0);
+		auto len = pdev->write_to_engine(cmd + offset, totalLen, channel);
 		totalLen -= len;
 		offset += len;
 	}

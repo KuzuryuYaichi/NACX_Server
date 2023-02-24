@@ -10,9 +10,9 @@ TinyInstance::TinyInstance(): tinyConfig(CONFIG_FILE),
     DataThreadCX(DataDealCX, std::ref(ServerSocket)), DataThreadZC(DataDealZC, std::ref(ServerSocket))
 {
     InitThread();
-    CmdProcess CmdControl;
+    StructCmdCX CmdCX;
     //CmdControl.SendCmd();
-    CmdControl.SetSample();
+    CmdCX.SendSample();
     //SerialPort.RunService();
     ServerSocket.Run();
 }

@@ -4,67 +4,13 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <cmath>
 #include "XDMA_PCIE/dllexport.h"
 
 #pragma pack(1)
 
-struct StructCmdCX
-{
-    unsigned short Head = 0xAA55;
-    char ScanSpeed = 4;
-    char StateMachine = 0; // 2
-    int StartCenterFreq = 350000;
-    int StopCenterFreq = 350000;
-    unsigned int AntennaFreq = 530000;
-    char RFAttenuation = 0;
-    char MFAttenuation = 0;
-    char RfMode = 1;
-    char CorrectAttenuation = 3;
-    unsigned int DDS_CTRL = 0;
-    char Resolution = 13;
-    char CorrectMode = 1;
-    char Smooth = 1;
-    char FFT_SCH = 4;
-    unsigned short RfProtectTime = 2; // 1/SampleRate
-    unsigned short Tail = 0x55AA;
-
-    StructCmdCX() {}
-
-    void ResetCmd()
-    {
-        new (this) StructCmdCX();
-    }
-};
-
-struct StructCmdZC
-{
-    unsigned char CmdType = 0;
-    union {
-        struct CMD_NB
-        {
-            unsigned char Channel;
-            unsigned short CIC;
-            unsigned int DDS;
-        } CmdNB;
-        struct CMD_RF
-        {
-            unsigned RfType;
-            unsigned int RfData;
-            unsigned char Reserved[2];
-        } CmdRF;
-    };
-    
-    StructCmdZC() {}
-
-    void ResetCmd()
-    {
-        new (this) StructCmdZC();
-    }
-};
-
 struct StructChannel
 {
-    static constexpr int IQ_LENGTH = 2 * sizeof(unsigned short);
     unsigned short I;
     unsigned short Q;
 };
@@ -93,97 +39,37 @@ struct StructSample
     char Reserved[4];
     StructFreqPoint FreqPoint[FREQ_LENGTH];
 
-    StructSample(unsigned short SubPack): SubPack(SubPack) {}
+    StructSample(unsigned short SubPack) : SubPack(SubPack) {}
 };
 
-#pragma pack()
-
-class CmdProcess
+struct StructCmdCX
 {
-public:
-    StructCmdCX CmdCX;
+    unsigned short Head = 0xAA55;
+    char ScanSpeed = 4;
+    char StateMachine = 0; // 2
+    int StartCenterFreq = 350000;
+    int StopCenterFreq = 350000;
+    unsigned int AntennaFreq = 530000;
+    char RFAttenuation = 0;
+    char MFAttenuation = 0;
+    char RfMode = 1;
+    char CorrectAttenuation = 3;
+    unsigned int DDS_CTRL = 0;
+    char Resolution = 13;
+    char CorrectMode = 1;
+    char Smooth = 1;
+    char FFT_SCH = 4;
+    unsigned short RfProtectTime = 2; // 1/SampleRate
+    unsigned short Tail = 0x55AA;
 
-    void setStructCmd(const StructCmdCX& commamd)
+    StructCmdCX() {}
+
+    void SendCXCmd()
     {
-        CmdCX = commamd;
+        WriteStreamCmd((char*)this, sizeof(StructCmdCX), 0);
     }
 
-    void SetFFT_SCH(int FFT_SCH)
-    {
-        CmdCX.FFT_SCH = FFT_SCH;
-    }
-
-    void SetScanSpeed(int ScanSpeed)
-    {
-        CmdCX.ScanSpeed = ScanSpeed;
-    }
-
-    void SetStateMachine(int State)
-    {
-        CmdCX.StateMachine = State;
-    }
-
-    void SetStartCenterFreq(int StartCenterFreq)
-    {
-        CmdCX.StartCenterFreq = StartCenterFreq;
-    }
-
-    void SetStopCenterFreq(int StopCenterFreq)
-    {
-        CmdCX.StopCenterFreq = StopCenterFreq;
-    }
-
-    void SetAntennaFreq(int AntennaFreq)
-    {
-        CmdCX.AntennaFreq = AntennaFreq;
-    }
-
-    void SetRFAttenuation(int RFGain)
-    {
-        CmdCX.RFAttenuation = RFGain;
-    }
-
-    void SetMFAttenuation(int IFGain)
-    {
-        CmdCX.MFAttenuation = IFGain;
-    }
-
-    void SetRfMode(int RfMode)
-    {
-        CmdCX.RfMode = RfMode;
-    }
-
-    void SetCorrectAttenuation(int CorrectGain)
-    {
-        CmdCX.CorrectAttenuation = CorrectGain;
-    }
-
-    void SetDDS_CTRL(int DDS_CTRL)
-    {
-        CmdCX.DDS_CTRL = DDS_CTRL;
-    }
-
-    void SetResolution(int Resolution)
-    {
-        CmdCX.Resolution = Resolution;
-    }
-
-    void SetCorrectMode(int CorrectMode)
-    {
-        CmdCX.CorrectMode = CorrectMode;
-    }
-
-    void SetSmooth(int Smooth)
-    {
-        CmdCX.Smooth = Smooth;
-    }
-
-    void SendCmd()
-    {
-        WriteStreamCmd((char*)&CmdCX);
-    }
-
-    void SetSample()
+    void SendSample()
     {
         const std::string SAMPLE_PATH = "Sample/RealSample.dat";
         if (!std::filesystem::exists(SAMPLE_PATH))
@@ -210,6 +96,33 @@ public:
         }
     }
 };
+
+struct StructCmdZC
+{
+    unsigned char CmdType = 0;
+    union
+    {
+        struct CMD_NB {
+            unsigned char Channel;
+            unsigned short CIC = 200;
+            unsigned int DDS;
+        } CmdNB;
+        struct CMD_RF {
+            unsigned char RfType;
+            unsigned int RfData;
+            unsigned char Reserved[2];
+        } CmdRF;
+    };
+    
+    StructCmdZC() {}
+
+    void SendZCCmd()
+    {
+        WriteStreamCmd((char*)this, sizeof(StructCmdZC), 1);
+    }
+};
+
+#pragma pack()
 
 struct Order
 {

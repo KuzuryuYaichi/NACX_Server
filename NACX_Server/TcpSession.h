@@ -35,18 +35,20 @@ private:
 	std::mutex& SessionSetMutex;
 	std::mutex WriteLock;
 	unsigned int TaskValue = 0;
-	CmdProcess CmdControl;
-	StructCmdCX& CmdCX;
+	StructCmdCX CmdCX;
+	StructCmdZC CmdZC;
 	StructWorkCommandRev ReplayCommand;
 	StructDeviceScheckRev ReplayScheck;
 	size_t TransferByte = 0;
 
 	void SelfCheck();
-	bool SetCXParmCommand(const std::vector<std::string>& CommandName);
-	void SetNBDataCommmand(const std::vector<std::string>& CommandName);
-	void SetWBDataCommand(const std::vector<std::string>& CommandName);
-	void SetSweepDataCommand(const std::vector<std::string>& CommandName);
-	void SetTestDataCommand(const std::vector<std::string>& CommandName);
+	bool SetCmdCXParm(const std::vector<std::string>&);
+	void SetCmdNBData(const std::vector<std::string>&);
+	void SetCmdWBData(const std::vector<std::string>&);
+	void SetCmdSweepData(const std::vector<std::string>&);
+	void SetCmdTestData(const std::vector<std::string>&);
+	void SetCmdNBReceiver(const std::vector<std::string>&);
+	void SetCmdNBChannel(const std::vector<std::string>&);
 
 	void StartRevDataWork();
 	void StopRevDataWork();

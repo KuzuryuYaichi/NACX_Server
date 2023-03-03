@@ -345,8 +345,8 @@ struct PARAMETER_SET
     int StartCenterFreq = 200000;
     int StopCenterFreq = 200000;
     unsigned int AntennaFreq = 530000;
-    char RFAttenuation = 1;
-    char MFAttenuation = 2;
+    char RFAttenuation = 0;
+    char MFAttenuation = 0;
     char RfMode = 0;
     char CorrectAttenuation = 3;
     unsigned int DDS_CTRL = 0;

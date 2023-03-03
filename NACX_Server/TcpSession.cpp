@@ -179,6 +179,7 @@ void TcpSession::RecvCommandFun(std::shared_ptr<Order> buffer)
     auto head = (DataHead*)buffer->order;
     if (head->Head != 0xF99FEFFE || head->PackType != 0x08FE)
     {
+        std::cout << "Head Error" << std::endl;
         return;
     }
     auto CommandPack = std::string(buffer->order + sizeof(DataHead), head->PackLen - sizeof(DataHead));
@@ -338,8 +339,8 @@ void TcpSession::SelfCheck()
         CmdCX.StateMachine = 3;
         CmdCX.Resolution = 13;
         CmdCX.CorrectMode = 0;
-        //CmdCX.RFAttenuation = 0;
-        //CmdCX.MFAttenuation = 0;
+        CmdCX.RFAttenuation = 30;
+        CmdCX.MFAttenuation = 12;
         CmdCX.CorrectAttenuation = 0;
         //CmdCX.StartCenterFreq = 350000;
         //CmdCX.StopCenterFreq = 350000;
@@ -516,11 +517,13 @@ bool TcpSession::SetCmdCXParm(const std::vector<std::string>& Cmd)
                         {
                             std::cout << "GainType: MGC, GainValue: " << MGCvalue << std::endl;
                             if (MGCvalue < 30)
-                                CmdCX.RFAttenuation = MGCvalue;
+                            {
+                                CmdCX.RFAttenuation = g_Parameter.RFAttenuation = MGCvalue;
+                            }
                             else
                             {
-                                CmdCX.RFAttenuation = 30;
-                                CmdCX.MFAttenuation = MGCvalue - 30;
+                                CmdCX.RFAttenuation = g_Parameter.RFAttenuation = 30;
+                                CmdCX.MFAttenuation = g_Parameter.MFAttenuation = MGCvalue - 30;
                             }
                         }
                         else
@@ -704,7 +707,7 @@ void TcpSession::SetCmdWBData(const std::vector<std::string>& Cmd)
         CmdCX.StopCenterFreq = CenterFreq;
         std::cout << "CenterFreq: " << CenterFreq << std::endl;
         CmdCX.CorrectMode = 1;
-        CmdCX.StateMachine = 0; //1
+        CmdCX.StateMachine = 1;
         CmdCX.SendCXCmd();
         //g_Parameter.SetCmd(Cmd.StartCenterFreq, Cmd.StopCenterFreq, Cmd.Resolution, TaskValue, 1);
         g_Parameter.SetFixedCXResult(TaskValue, CmdCX.StartCenterFreq, CmdCX.Resolution);
@@ -822,7 +825,15 @@ void TcpSession::SetCmdTestData(const std::vector<std::string>& Cmd)
         std::cout << "StartFreq: " << CenterFreq << " StopFreq: " << CenterFreq << std::endl;
         CmdCX.StateMachine = 2;
         CmdCX.CorrectAttenuation = scope;
-        //Cmd.CorrectMode = 0;
+        CmdCX.RFAttenuation = 30;
+        CmdCX.MFAttenuation = 12;
+        CmdCX.CorrectMode = 0;
+        CmdCX.SendCXCmd();
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        
+        CmdCX.RFAttenuation = g_Parameter.RFAttenuation;
+        CmdCX.MFAttenuation = g_Parameter.MFAttenuation;
+        CmdCX.CorrectMode = 1;
         CmdCX.SendCXCmd();
         g_Parameter.SetTestCXResult(TaskValue, CmdCX.StartCenterFreq, CmdCX.Resolution);
         StartRevDataWork();

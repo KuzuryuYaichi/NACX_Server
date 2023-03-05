@@ -356,7 +356,7 @@ struct PARAMETER_SET
     char FFT_SCH = 0;
     unsigned short RfProtectTime = 2; // 1/SampleRate
 
-    long long NbCenterFreqRF;
+    int NbCenterFreqRF;
 
     enum DATA_TRANS
     {

@@ -338,76 +338,67 @@ void TcpSession::SelfCheck()
     {
         CmdCX.StateMachine = 3;
         CmdCX.Resolution = 13;
-        CmdCX.CorrectMode = 0;
         CmdCX.RFAttenuation = 30;
         CmdCX.MFAttenuation = 12;
         CmdCX.CorrectAttenuation = 0;
-        //CmdCX.StartCenterFreq = 350000;
-        //CmdCX.StopCenterFreq = 350000;
-        //g_Parameter.SetTestCXResult(TaskValue, CmdCX.StartCenterFreq, CmdCX.Resolution);
+        CmdCX.StartCenterFreq = 350000;
+        CmdCX.StopCenterFreq = 350000;
+        CmdCX.CorrectMode = 0;
         CmdCX.SendCXCmd();
         std::this_thread::sleep_for(std::chrono::seconds(200));
-        //g_Parameter.isTestingInner = true;
-        //while (g_Parameter.isTestingInner);
-        //CmdCX.CorrectMode = 1;
-        //CmdControl.SendCmd();
-        //std::this_thread::sleep_for(std::chrono::seconds(200));
-        //g_Parameter.isTestingOuter = true;
-        //while (g_Parameter.isTestingOuter);
+        g_Parameter.isTestingInner = true;
+        while (g_Parameter.isTestingInner);
+        CmdCX.CorrectMode = 1;
+        CmdCX.SendCXCmd();
+        std::this_thread::sleep_for(std::chrono::seconds(200));
+        g_Parameter.isTestingOuter = true;
+        while (g_Parameter.isTestingOuter);
 
-        //bool CorrectRes = true, RFRes = true, AntennaRes = true;
-        //std::string TestResStr;
+        std::string TestResStr;
+        ReplayScheck.Task = TaskValue;
+        ReplayScheck.DeviveChNum = 4;
+        ReplayScheck.ScheckResult = 0x0000FFE0;
 
-        //ReplayScheck.Task = TaskValue;
-        //ReplayScheck.DeviveChNum = 4;
-        //ReplayScheck.ScheckResult = 0x0000FFE0;
+        TestResStr += "Correct: \r\n";
+        for (int i = 0; i < PARAMETER_SET::CX_CH_NUM; ++i)
+        {
+            if (g_Parameter.SelfTestInner[i])
+            {
+                ReplayScheck.ScheckResult |= 0x80000000;
+                TestResStr += "Check Success";
+                break;
+            }
+        }
+        TestResStr += "\r\n\r\nPDU Check: ";
+        TestResStr += (ReplayScheck.ScheckResult & ((long long)1 << 63)) ? "Success " : "Failed "; //Correct Status
+        TestResStr += "\r\n\r\nRF: \r\n";
+        for (int i = 0; i < PARAMETER_SET::CX_CH_NUM; ++i)
+        {
+            if (!g_Parameter.SelfTestInner[i])
+            {
+                ReplayScheck.ScheckResult |= 1 << i;
+            }
+            TestResStr += std::to_string(i + 1) + "Channel Check: " + (g_Parameter.SelfTestInner[i] ? "Success " : "Failed ");
+        }
 
-        //TestResStr += "Correct: \r\n";
-        //for (int i = 0; i < PARAMETER_SET::CX_CH_NUM; ++i)
-        //{
-        //    CorrectRes &= g_Parameter.SelfTestInner[i];
-        //    if (g_Parameter.SelfTestInner[i])
-        //    {
-        //        TestResStr += "Check Success";
-        //        CorrectRes = true;
-        //        break;
-        //    }
-        //    else
-        //    {
-        //        ReplayScheck.ScheckResult |= 0x80000000;
-        //    }
-        //}
-        //TestResStr += "\r\n\r\nPDU Check: ";
-        //TestResStr += (ReplayScheck.ScheckResult & ((long long)1 << 63)) ? "Success " : "Failed "; //Correct Status
-        //TestResStr += "\r\n\r\nRF: \r\n";
-        //for (int i = 0; i < PARAMETER_SET::CX_CH_NUM; ++i)
-        //{
-        //    if (!g_Parameter.SelfTestInner[i])
-        //        ReplayScheck.ScheckResult |= 1 << i;
-        //    RFRes &= g_Parameter.SelfTestInner[i];
-        //    TestResStr += std::to_string(i + 1) + "Channel Check: " + (g_Parameter.SelfTestInner[i] ? "Success " : "Failed ");
-        //}
+        ReplayScheck.AGroupNum = 2;
+        ReplayScheck.AScheckResult = 0xFFFFFFE0;
+        TestResStr += "\r\n\r\nAntenna: \r\n";
+        for (int i = 0; i < PARAMETER_SET::CX_CH_NUM; ++i)
+        {
+            if (!g_Parameter.SelfTestOuter[i])
+            {
+                ReplayScheck.AScheckResult |= 0x101 << i;
+            }
+            TestResStr += std::to_string(i + 1) + "Channel Check: " + (g_Parameter.SelfTestOuter[i] ? "Success " : "Failed ");
+        }
 
-        //ReplayScheck.AGroupNum = 2;
-        //ReplayScheck.AScheckResult = 0xFFFFFFE0;
-        //TestResStr += "\r\n\r\nAntenna: \r\n";
-        //for (int i = 0; i < PARAMETER_SET::CX_CH_NUM; ++i)
-        //{
-        //    if (!g_Parameter.SelfTestOuter[i])
-        //    {
-        //        ReplayScheck.AScheckResult |= 1 << i;
-        //        ReplayScheck.AScheckResult |= 0x100 << i;
-        //    }
-        //    AntennaRes &= g_Parameter.SelfTestOuter[i];
-        //    TestResStr += std::to_string(i + 1) + "Channel Check: " + (g_Parameter.SelfTestOuter[i] ? "Success " : "Failed ");
-        //}
-
-        //if (g_Parameter.StartScheck)
-        //{
-        //    ScheckReplay(ReplayScheck);
-        //    std::cout << "State: SelfCheck Finished" << std::endl;
-        //    g_Parameter.StartScheck = false;
-        //}
+        if (g_Parameter.StartScheck)
+        {
+            ScheckReplay(ReplayScheck);
+            std::cout << "State: SelfCheck Finished" << std::endl;
+            g_Parameter.StartScheck = false;
+        }
 
         //CmdCX.Resolution = g_Parameter.CmdResolution;
         //CmdCX.StartCenterFreq = g_Parameter.CmdStartCenterFreq;
@@ -662,7 +653,6 @@ void TcpSession::SetCmdNBData(const std::vector<std::string>& Cmd)
         CmdCX.StartCenterFreq = CenterFreq;
         CmdCX.StopCenterFreq = CenterFreq;
         std::cout << "CenterFreq: " << CenterFreq << std::endl;
-        //Cmd.CorrectMode = 0;
         CmdCX.StateMachine = 0;
         CmdCX.SendCXCmd();
         //NarrowCXResult.CXType = DFMethod;
@@ -709,7 +699,6 @@ void TcpSession::SetCmdWBData(const std::vector<std::string>& Cmd)
         CmdCX.CorrectMode = 1;
         CmdCX.StateMachine = 1;
         CmdCX.SendCXCmd();
-        //g_Parameter.SetCmd(Cmd.StartCenterFreq, Cmd.StopCenterFreq, Cmd.Resolution, TaskValue, 1);
         g_Parameter.SetFixedCXResult(TaskValue, CmdCX.StartCenterFreq, CmdCX.Resolution);
         StartRevDataWork();
         std::cout << "Type: Fixed WB CX, Val: Start Gather, State: Gathering" << std::endl;
@@ -869,8 +858,7 @@ void TcpSession::SetCmdNBReceiver(const std::vector<std::string>& Cmd)
             {
                 auto Freq = std::stol(Cmd[i].substr(sizeof("Freq"))) / 1000;
                 CmdZC.CmdRF.RfType = 1;
-                CmdZC.CmdRF.RfData = Freq;
-                g_Parameter.NbCenterFreqRF = Freq;
+                CmdZC.CmdRF.RfData = g_Parameter.NbCenterFreqRF = Freq;
             } 
         }
     }
@@ -895,12 +883,12 @@ void TcpSession::SetCmdNBChannel(const std::vector<std::string>& Cmd)
             }
             else if (ParmName == "Freq")
             {
-                auto Freq = std::stol(Cmd[i].substr(sizeof("Freq"))) / 1000;
-                CmdZC.CmdNB.DDS = std::round(std::pow(2ll, 32) * (Freq - g_Parameter.NbCenterFreqRF) / 250000);
+                auto Freq = std::stol(Cmd[i].substr(sizeof("Freq")));
+                CmdZC.CmdNB.DDS = std::round(std::pow(2, 32) * (Freq - g_Parameter.NbCenterFreqRF) / 250000);
             }
             else if (ParmName == "DDCBW")
             {
-                auto DDCBW = std::stol(Cmd[i].substr(sizeof("DDCBW"))) / 1000;
+                auto DDCBW = std::stol(Cmd[i].substr(sizeof("DDCBW")));
                 switch (DDCBW)
                 {
                 case 2400: CmdZC.CmdNB.CIC = 8000; break;

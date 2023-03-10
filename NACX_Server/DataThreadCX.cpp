@@ -88,30 +88,24 @@ void DataDealCX(TcpSocket& socket)
 {
     auto ToSelfCheck = [&](const StructDataCX& recvData)
     {
-        auto FFTPackNum = (int)std::pow(2, recvData.Resolution - 10);
-        auto onePackPoints = FFTPackNum * 400;
+        const auto LENGTH = g_Parameter.TestCXResult.DataPoint - 1;
+        auto ch = recvData.DataType - 1;
+        if (ch < 0 || ch >= 4)
+            return;
         auto Data = recvData.RangePhaseData;
-        int outDataCount = sizeof(recvData.RangePhaseData) / 4 / 16 * FFTPackNum;
-        double outDataAmplitude[PARAMETER_SET::CX_CH_NUM];
-
-        int nowPoint = onePackPoints / 2;
-        for (int i = 0; i < PARAMETER_SET::CX_CH_NUM; ++i)
+        
+        auto Range = Data[LENGTH / 2].Range / 100 + 12;
+        if (g_Parameter.isTestingInner != 0xF && recvData.WorkMode == 0 && recvData.CorrectMode == 0 && recvData.CentreFreq == 350000)
         {
-            int index = 8 * nowPoint + i;
-            auto& iqData = Data[index];
-            outDataAmplitude[i] = 20 * std::log10(std::sqrt(std::pow(iqData.Range, 2.0) + std::pow(iqData.Phase, 2.0))) - 120;
+            g_Parameter.SelfTestInner[ch] = Range > 70;
+            g_Parameter.isTestingInner |= 1 << ch;
+            std::cout << "Inner Channel: " << ch << ", Range: " << Range << std::endl;
         }
-        if (g_Parameter.isTestingInner && recvData.WorkMode == 0 && recvData.CorrectMode == 0 && recvData.CentreFreq == 350000)
+        else if (g_Parameter.isTestingOuter != 0xF && recvData.WorkMode == 0 && recvData.CorrectMode == 1 && recvData.CentreFreq == 350000)
         {
-            for (int i = 0; i < PARAMETER_SET::CX_CH_NUM; ++i)
-                g_Parameter.SelfTestInner[i] = outDataAmplitude[i] > -70;
-            g_Parameter.isTestingInner = false;
-        }
-        else if (g_Parameter.isTestingOuter && recvData.WorkMode == 0 && recvData.CorrectMode == 1 && recvData.CentreFreq == 350000)
-        {
-            for (int i = 0; i < PARAMETER_SET::CX_CH_NUM; ++i)
-                g_Parameter.SelfTestOuter[i] = outDataAmplitude[i] > -70;
-            g_Parameter.isTestingOuter = false;
+            g_Parameter.SelfTestOuter[ch] = Range > 70;
+            g_Parameter.isTestingOuter |= 1 << ch;
+            std::cout << "Outer Channel: " << ch << ", Range: " << Range << std::endl;
         }
     };
 
@@ -293,7 +287,7 @@ void DataDealCX(TcpSocket& socket)
             std::lock_guard<std::mutex> lk(g_Parameter.TestMutex);
             if (recvData.DataType == 0 || TestCXResult.FreqResolution != ResolveResolution(recvData.Resolution))
                 return;
-            if (g_Parameter.isTestingInner || g_Parameter.isTestingOuter)
+            if (g_Parameter.isTestingInner != 0xF || g_Parameter.isTestingOuter != 0xF)
             {
                 ToSelfCheck(recvData);
             }

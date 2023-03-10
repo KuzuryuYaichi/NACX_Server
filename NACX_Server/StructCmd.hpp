@@ -11,8 +11,8 @@
 
 struct StructChannel
 {
-    unsigned short I;
-    unsigned short Q;
+    unsigned short I = 0;
+    unsigned short Q = 0;
 };
 
 struct StructDirection
@@ -30,14 +30,13 @@ struct StructFreqPoint
 struct StructSample
 {
     static constexpr int TOTAL_FREQ_LENGTH = 321;
-    static constexpr int FREQ_LENGTH = 1;
 
     unsigned int Head = 0x5A5AA5A5;
     unsigned short TotalPack = TOTAL_FREQ_LENGTH;
     unsigned short SubPack;
     unsigned int SubPackLen;
     char Reserved[4];
-    StructFreqPoint FreqPoint[FREQ_LENGTH];
+    StructFreqPoint FreqPoint;
 
     StructSample(unsigned short SubPack) : SubPack(SubPack) {}
 };
@@ -86,8 +85,9 @@ struct StructCmdCX
             {
                 static constexpr int START_FREQ = 190;
                 StructSample sample(i + START_FREQ);
-                stream.read((char*)sample.FreqPoint, sizeof(StructFreqPoint));
+                stream.read((char*)&sample.FreqPoint, sizeof(StructFreqPoint));
                 WriteStreamSample((char*)&sample, sizeof(StructSample));
+                std::this_thread::sleep_for(std::chrono::milliseconds(5));
             }
         }
         catch (const std::exception& e)

@@ -327,19 +327,6 @@ struct PARAMETER_SET
 
     unsigned char DeviceID[14];
 
-    short Data = 0;
-    short Detect;
-    float FreqRes;
-    int SimBW;
-    short GMode;
-    short MGC;
-    short AGC;
-    short SmNum;
-    short SmMode;
-    short LmMode;
-    short LmVal;
-    short RcvMode;
-
     char ScanSpeed = 4;
     char StateMachine = 1;
     int StartCenterFreq = 200000;
@@ -352,7 +339,7 @@ struct PARAMETER_SET
     unsigned int DDS_CTRL = 0;
     char Resolution = 13;
     char CorrectMode = 0;
-    char Smooth = 0;
+    char Smooth = 1;
     char FFT_SCH = 0;
     unsigned short RfProtectTime = 2; // 1/SampleRate
 
@@ -422,11 +409,10 @@ struct PARAMETER_SET
         std::lock_guard<std::mutex> lock(NBWaveMutex);
     }
 
-    bool isTestingInner = false;
-    bool isTestingOuter = false;
+    char isTestingInner = 0xF;
+    char isTestingOuter = 0xF;
     bool SelfTestInner[CX_CH_NUM] = { false };
     bool SelfTestOuter[CX_CH_NUM] = { false };
-    bool StartScheck = false;
 };
 
 void DataHeadToByte(unsigned short, size_t, char*, unsigned short);

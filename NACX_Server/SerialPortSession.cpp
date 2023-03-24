@@ -14,7 +14,7 @@ SerialPortSession::SerialPortSession(const std::string& name, unsigned int baudR
     serialPort.set_option(boost::asio::serial_port::flow_control());
     serialPort.set_option(boost::asio::serial_port::parity());
     serialPort.set_option(boost::asio::serial_port::stop_bits());
-    serialPort.set_option(boost::asio::serial_port::character_size(8));
+    serialPort.set_option(boost::asio::serial_port::character_size());
 }
 
 SerialPortSession::~SerialPortSession()

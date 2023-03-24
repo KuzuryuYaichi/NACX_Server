@@ -344,8 +344,8 @@ void TcpSession::SelfCheck()
         CmdCX.StateMachine = 3;
         CmdCX.Resolution = 13;
         CmdCX.RFAttenuation = 30;
-        CmdCX.MFAttenuation = 12;
-        CmdCX.CorrectAttenuation = 0;
+        CmdCX.MFAttenuation = 2;
+        CmdCX.CorrectAttenuation = 10;
         CmdCX.StartCenterFreq = CmdCX.StopCenterFreq = 350000;
         CmdCX.CorrectMode = 0;
         CmdCX.SendCXCmd();
@@ -402,9 +402,9 @@ void TcpSession::SelfCheck()
         ScheckReplay(ReplayScheck);
         std::cout << "State: SelfCheck Finished" << std::endl;
 
-        CmdCX.Resolution = g_Parameter.CmdResolution;
-        CmdCX.StartCenterFreq = g_Parameter.CmdStartCenterFreq;
-        CmdCX.StopCenterFreq = g_Parameter.CmdStopCenterFreq;
+        CmdCX.Resolution = g_Parameter.Resolution;
+        CmdCX.StartCenterFreq = g_Parameter.StartCenterFreq;
+        CmdCX.StopCenterFreq = g_Parameter.StartCenterFreq;
         CmdCX.RFAttenuation = g_Parameter.RFAttenuation;
         CmdCX.RFAttenuation = g_Parameter.MFAttenuation;
         CmdCX.Smooth = g_Parameter.Smooth;
@@ -688,6 +688,7 @@ void TcpSession::SetCmdWBData(const std::vector<std::string>& Cmd)
         CmdCX.MFAttenuation = g_Parameter.MFAttenuation;
         CmdCX.CorrectMode = 1;
         CmdCX.SendCXCmd();
+        g_Parameter.SetCmd(CmdCX.StartCenterFreq, CmdCX.StopCenterFreq, CmdCX.Resolution, TaskValue, 0);
         g_Parameter.SetFixedCXResult(TaskValue, CmdCX.StartCenterFreq, CmdCX.Resolution);
         StartRevDataWork();
         std::cout << "Type: Fixed WB CX, Val: Start Gather, State: Gathering" << std::endl;
@@ -857,7 +858,8 @@ void TcpSession::SetCmdNBReceiver(const std::vector<std::string>& Cmd)
             {
                 auto Freq = std::stol(Cmd[i].substr(sizeof("Freq")));
                 CmdZC.CmdRF.RfType = 1;
-                CmdZC.CmdRF.RfData = g_Parameter.NbCenterFreqRF = Freq;
+                CmdZC.CmdRF.RfData = Freq;
+                g_Parameter.NbCenterFreqRF = Freq / 1e3;
             } 
         }
     }
@@ -884,19 +886,21 @@ void TcpSession::SetCmdNBChannel(const std::vector<std::string>& Cmd)
             {
                 auto Freq = std::stol(Cmd[i].substr(sizeof("Freq")));
                 CmdZC.CmdNB.DDS = std::round(std::pow(2, 32) * (Freq - g_Parameter.NbCenterFreqRF) / 250000);
+                g_Parameter.SetNBWaveResultFrequency(CmdZC.CmdNB.Channel, Freq * 1000);
             }
             else if (ParmName == "DDCBW")
             {
                 auto DDCBW = std::stol(Cmd[i].substr(sizeof("DDCBW")));
+                unsigned short CIC = 8000;
                 switch (DDCBW)
                 {
-                case 2400: CmdZC.CmdNB.CIC = 8000; break;
-                case 4800: CmdZC.CmdNB.CIC = 4000; break;
-                case 9600: CmdZC.CmdNB.CIC = 2000; break;
-                case 19200: CmdZC.CmdNB.CIC = 1000; break;
-                case 38400: CmdZC.CmdNB.CIC = 500; break;
-                case 76800: CmdZC.CmdNB.CIC = 250; break;
-                case 96000: CmdZC.CmdNB.CIC = 200; break;
+                case 2400: CmdZC.CmdNB.CIC = 8000; g_Parameter.SetNBWaveResultBandWidth(CmdZC.CmdNB.Channel, DDCBW); break;
+                case 4800: CmdZC.CmdNB.CIC = 4000; g_Parameter.SetNBWaveResultBandWidth(CmdZC.CmdNB.Channel, DDCBW); break;
+                case 9600: CmdZC.CmdNB.CIC = 2000; g_Parameter.SetNBWaveResultBandWidth(CmdZC.CmdNB.Channel, DDCBW); break;
+                case 19200: CmdZC.CmdNB.CIC = 1000; g_Parameter.SetNBWaveResultBandWidth(CmdZC.CmdNB.Channel, DDCBW); break;
+                case 38400: CmdZC.CmdNB.CIC = 500; g_Parameter.SetNBWaveResultBandWidth(CmdZC.CmdNB.Channel, DDCBW); break;
+                case 76800: CmdZC.CmdNB.CIC = 250; g_Parameter.SetNBWaveResultBandWidth(CmdZC.CmdNB.Channel, DDCBW); break;
+                case 96000: CmdZC.CmdNB.CIC = 200; g_Parameter.SetNBWaveResultBandWidth(CmdZC.CmdNB.Channel, DDCBW); break;
                 default: break;
                 }
             }

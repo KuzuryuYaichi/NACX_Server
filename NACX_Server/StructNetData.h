@@ -173,8 +173,15 @@ struct StructNBWaveZCResult
     StructNBWaveZCResult(const StructNBWaveZCResult&) = default;
     StructNBWaveZCResult& operator=(const StructNBWaveZCResult&) = default;
 
-    void SetNBWaveResult()
+    void SetNBWaveResultFrequency(unsigned long long Frequency)
     {
+        this->Frequency = Frequency;
+    }
+
+    void SetNBWaveResultBandWidth(unsigned int BandWidth)
+    {
+        this->BandWidth = BandWidth;
+        Sps = BandWidth / 2048;
     }
 };
 
@@ -363,8 +370,8 @@ struct PARAMETER_SET
     void SetCmd(int CmdStartCenterFreq, int CmdStopCenterFreq, unsigned int CmdResolution, unsigned int CmdTask, unsigned int CXmode)
     {
         std::lock_guard<std::mutex> lock(ParameterMutex);
-        this->CmdStartCenterFreq = CmdStartCenterFreq;
-        this->CmdStopCenterFreq = CmdStopCenterFreq;
+        this->CmdStartCenterFreq = this->StartCenterFreq = CmdStartCenterFreq;
+        this->CmdStopCenterFreq = this->StopCenterFreq = CmdStopCenterFreq;
         this->CmdResolution = CmdResolution;
         this->CXmode = CXmode;
         this->CmdTask = CmdTask;
@@ -404,9 +411,19 @@ struct PARAMETER_SET
 
     std::mutex NBWaveMutex;
     StructNBWaveZCResult NBWaveZCResult[ZC_CH_NUM];
-    void SetNBWaveResult(int ChNum, unsigned long long CenterFreq, unsigned int BandWidth)
+    void SetNBWaveResultFrequency(int ChNum, unsigned long long Frequency)
     {
+        if (ChNum < 0 || ChNum >= ZC_CH_NUM)
+            return;
         std::lock_guard<std::mutex> lock(NBWaveMutex);
+        NBWaveZCResult[ChNum].SetNBWaveResultFrequency(Frequency);
+    }
+    void SetNBWaveResultBandWidth(int ChNum, unsigned int BandWidth)
+    {
+        if (ChNum < 0 || ChNum >= ZC_CH_NUM)
+            return;
+        std::lock_guard<std::mutex> lock(NBWaveMutex);
+        NBWaveZCResult[ChNum].SetNBWaveResultBandWidth(BandWidth);
     }
 
     char isTestingInner = 0xF;

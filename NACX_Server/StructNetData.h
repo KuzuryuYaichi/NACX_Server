@@ -331,6 +331,15 @@ struct PARAMETER_SET
 {
     static constexpr int CX_CH_NUM = 4;
     static constexpr int ZC_CH_NUM = 16;
+    static constexpr int CALC_MASK()
+    {
+        int res = 0;
+        for (int i = 0; i < CX_CH_NUM; ++i)
+        {
+            res |= 1 << i;
+        }
+        return res;
+    }
 
     unsigned char DeviceID[14];
 
@@ -339,10 +348,10 @@ struct PARAMETER_SET
     int StartCenterFreq = 200000;
     int StopCenterFreq = 200000;
     unsigned int AntennaFreq = 530000;
-    char RFAttenuation = 0;
+    char RFAttenuation = 10;
     char MFAttenuation = 0;
     char RfMode = 0;
-    char CorrectAttenuation = 3;
+    char CorrectAttenuation = 15;
     unsigned int DDS_CTRL = 0;
     char Resolution = 13;
     char CorrectMode = 0;
@@ -426,8 +435,8 @@ struct PARAMETER_SET
         NBWaveZCResult[ChNum].SetNBWaveResultBandWidth(BandWidth);
     }
 
-    char isTestingInner = 0xF;
-    char isTestingOuter = 0xF;
+    char isTestingInner = CALC_MASK();
+    char isTestingOuter = CALC_MASK();
     bool SelfTestInner[CX_CH_NUM] = { false };
     bool SelfTestOuter[CX_CH_NUM] = { false };
 };

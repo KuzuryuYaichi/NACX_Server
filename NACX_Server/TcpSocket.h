@@ -13,13 +13,13 @@ class TcpSocket
 {
 public:
 	explicit TcpSocket(const std::string&, const unsigned short&);
-	void SendMsg(std::shared_ptr<StructNetData> data);
-	void FixedCXDataReplay(const StructFixedCXResult&, std::shared_ptr<StructNetData>&, size_t, unsigned short);
-	void FixedCXDataReplay(const StructFixedCXResult&, std::shared_ptr<StructNetData>&, size_t);
-	void NBZCDataReplay(const StructNBWaveZCResult&, std::shared_ptr<StructNetData>&, size_t, unsigned char);
-	void NBCXDataReplay(const StructNBCXResult&, std::shared_ptr<StructNetData>&, size_t);
-	void SweepCXDataReplay(const StructSweepCXResult&, std::shared_ptr<StructNetData>&, size_t);
-	void TestCXDataReplay(const StructTestCXResult&, std::shared_ptr<StructNetData>&, size_t);
+	void SendMsg(const std::unique_ptr<StructNetData>&);
+	void FixedCXDataReplay(const StructFixedCXResult&, const std::unique_ptr<StructNetData>&, size_t, unsigned short);
+	void FixedCXDataReplay(const StructFixedCXResult&, const std::unique_ptr<StructNetData>&, size_t);
+	void NBZCDataReplay(const StructNBWaveZCResult&, const std::unique_ptr<StructNetData>&, size_t, unsigned char);
+	void NBCXDataReplay(const StructNBCXResult&, const std::unique_ptr<StructNetData>&, size_t);
+	void SweepCXDataReplay(const StructSweepCXResult&, const std::unique_ptr<StructNetData>&, size_t);
+	void TestCXDataReplay(const StructTestCXResult&, const std::unique_ptr<StructNetData>&, size_t);
 	void Run();
 
 private:

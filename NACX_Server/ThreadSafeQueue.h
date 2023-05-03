@@ -34,14 +34,14 @@ public:
 
     threadsafe_queue(std::initializer_list<value_type> list): threadsafe_queue(list.begin(), list.end()) {}
 
-    void push(const value_type& new_value)
-    {
-        std::lock_guard<std::mutex> lk(mut);
-        if (data_queue.size() > MAX_BUFFER_DEPTH)
-            return;
-        data_queue.push(new_value);
-        data_cond.notify_one();
-    }
+    //void push(const value_type& new_value)
+    //{
+    //    std::lock_guard<std::mutex> lk(mut);
+    //    if (data_queue.size() > MAX_BUFFER_DEPTH)
+    //        return;
+    //    data_queue.push(new_value);
+    //    data_cond.notify_one();
+    //}
 
     void push(value_type&& new_value)
     {

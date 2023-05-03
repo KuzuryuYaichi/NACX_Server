@@ -49,10 +49,10 @@ struct StructCmdCX
     int StartCenterFreq = 350000;
     int StopCenterFreq = 350000;
     unsigned int AntennaFreq = 530000;
-    char RFAttenuation = 0;
+    char RFAttenuation = 10;
     char MFAttenuation = 0;
     char RfMode = 1;
-    char CorrectAttenuation = 3;
+    char CorrectAttenuation = 15;
     unsigned int DDS_CTRL = 0;
     char Resolution = 13;
     char CorrectMode = 1;

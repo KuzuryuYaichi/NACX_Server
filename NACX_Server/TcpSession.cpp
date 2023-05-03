@@ -4,7 +4,7 @@
 #include "boost/property_tree/ptree.hpp"
 
 extern PARAMETER_SET g_Parameter;
-extern threadsafe_queue<std::shared_ptr<Struct_Datas<StructDataCX>>> tsqueueCXs;
+//extern threadsafe_queue<std::unique_ptr<Struct_Datas<StructDataCX>>> tsqueueCXs;
 
 TcpSession::TcpSession(boost::asio::ip::tcp::socket&& socket, std::unordered_set<TcpSession*>& SessionSet, std::mutex& SessionSetMutex) :
     socket(std::move(socket)), SessionSet(SessionSet), SessionSetMutex(SessionSetMutex)
@@ -88,7 +88,7 @@ void TcpSession::read()
     static constexpr int BUFFER_LEN = 1024;
     try
     {
-        auto data = std::make_shared<Order>(BUFFER_LEN);
+        auto data = std::make_unique<Order>(BUFFER_LEN);
         boost::system::error_code err;
         size_t left = BUFFER_LEN, offset = 0;
         //while (left > 0)
@@ -112,7 +112,7 @@ void TcpSession::read()
     }
 }
 
-void TcpSession::write(std::shared_ptr<StructNetData> data)
+void TcpSession::write(const std::unique_ptr<StructNetData>& data)
 {
     std::lock_guard<std::mutex> lk(WriteLock);
     try
@@ -150,7 +150,7 @@ void TcpSession::RemoveFromSet()
 void TcpSession::ControlReplay(unsigned int Task, short ControlFlag, short ErrorMsg)
 {
     static constexpr auto DataLen = sizeof(DataHead) + sizeof(StructControlRev);
-    auto res = std::make_shared<StructNetData>(1, DataLen);
+    auto res = std::make_unique<StructNetData>(1, DataLen);
     DataHeadToByte(0x0500, DataLen, res->data);
     new (res->data + sizeof(DataHead)) StructControlRev(Task, ControlFlag, ErrorMsg);
     write(res);
@@ -159,7 +159,7 @@ void TcpSession::ControlReplay(unsigned int Task, short ControlFlag, short Error
 void TcpSession::WorkParmReplay(const StructWorkCommandRev& ReplayParm)
 {
     static constexpr auto DataLen = sizeof(DataHead) + sizeof(StructWorkCommandRev);
-    auto res = std::make_shared<StructNetData>(1, DataLen);
+    auto res = std::make_unique<StructNetData>(1, DataLen);
     DataHeadToByte(0x0511, DataLen, res->data);
     *(StructWorkCommandRev*)(res->data + sizeof(DataHead)) = ReplayParm;
     write(res);
@@ -168,13 +168,13 @@ void TcpSession::WorkParmReplay(const StructWorkCommandRev& ReplayParm)
 void TcpSession::ScheckReplay(const StructDeviceScheckRev& ReplayParm)
 {
     static constexpr auto DataLen = sizeof(DataHead) + sizeof(StructDeviceScheckRev);
-    auto res = std::make_shared<StructNetData>(1, DataLen);
+    auto res = std::make_unique<StructNetData>(1, DataLen);
     DataHeadToByte(0x0512, DataLen, res->data);
     *(StructDeviceScheckRev*)(res->data + sizeof(DataHead)) = ReplayParm;
     write(res);
 }
 
-void TcpSession::RecvCommandFun(std::shared_ptr<Order> buffer)
+void TcpSession::RecvCommandFun(const std::unique_ptr<Order>& buffer)
 {
     auto head = (DataHead*)buffer->order;
     if (head->Head != 0xF99FEFFE || head->PackType != 0x08FE)
@@ -329,7 +329,7 @@ void TcpSession::RecvCommandFun(std::shared_ptr<Order> buffer)
         return;
     }
     }
-    tsqueueCXs.clear();
+    //tsqueueCXs.clear();
 }
 
 void TcpSession::SelfCheck()
@@ -344,8 +344,7 @@ void TcpSession::SelfCheck()
         CmdCX.StateMachine = 3;
         CmdCX.Resolution = 13;
         CmdCX.RFAttenuation = 30;
-        CmdCX.MFAttenuation = 2;
-        CmdCX.CorrectAttenuation = 10;
+        CmdCX.MFAttenuation = 0;
         CmdCX.StartCenterFreq = CmdCX.StopCenterFreq = 350000;
         CmdCX.CorrectMode = 0;
         CmdCX.SendCXCmd();
@@ -354,12 +353,14 @@ void TcpSession::SelfCheck()
         g_Parameter.DataType = PARAMETER_SET::TEST_CHANNEL;
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
         g_Parameter.isTestingInner = 0;
-        while (g_Parameter.isTestingInner != 0xF);
+        while (g_Parameter.isTestingInner != PARAMETER_SET::CALC_MASK());
+        CmdCX.RFAttenuation = 10;
+        CmdCX.MFAttenuation = 0;
         CmdCX.CorrectMode = 1;
         CmdCX.SendCXCmd();
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
         g_Parameter.isTestingOuter = 0;
-        while (g_Parameter.isTestingOuter != 0xF);
+        while (g_Parameter.isTestingOuter != PARAMETER_SET::CALC_MASK());
 
         std::string TestResStr;
         ReplayScheck.Task = TaskValue;
@@ -490,6 +491,7 @@ bool TcpSession::SetCmdCXParm(const std::vector<std::string>& Cmd)
                             if (MGCvalue < 30)
                             {
                                 CmdCX.RFAttenuation = g_Parameter.RFAttenuation = MGCvalue;
+                                CmdCX.MFAttenuation = g_Parameter.MFAttenuation = 0;
                             }
                             else
                             {
@@ -604,8 +606,7 @@ bool TcpSession::SetCmdCXParm(const std::vector<std::string>& Cmd)
 
 void TcpSession::SetCmdNBData(const std::vector<std::string>& Cmd)
 {
-    unsigned int BWvalue = 80000;
-    int ActValue = 3, CenterFreq = 0;
+    unsigned int BWvalue = 80000, ActValue = 3, CenterFreq = 0;
     short DFMethod = 6, FNumber = 20;
 
     for (size_t n = Cmd.size(), i = 3; i < n; ++i)
@@ -617,7 +618,7 @@ void TcpSession::SetCmdNBData(const std::vector<std::string>& Cmd)
             if (ParmName == "Act")
                 ActValue = std::stol(Cmd[i].substr(sizeof("Act")));
             else if (ParmName == "DFreq")
-                CenterFreq = std::stol(Cmd[i].substr(sizeof("DFreq"))) / 1000;
+                CenterFreq = std::stoul(Cmd[i].substr(sizeof("DFreq"))) / 1000;
             else if (ParmName == "BW")
                 BWvalue = std::stoul(Cmd[i].substr(sizeof("BW"))) / 1000;
             else if (ParmName == "DFMethod")
@@ -656,7 +657,7 @@ void TcpSession::SetCmdNBData(const std::vector<std::string>& Cmd)
 
 void TcpSession::SetCmdWBData(const std::vector<std::string>& Cmd)
 {
-    int ActValue = 3, CenterFreq = 0;
+    unsigned int ActValue = 3, CenterFreq = 0;
     for (size_t n = Cmd.size(), i = 3; i < n; i++)
     {
         auto index = Cmd[i].find_first_of(':');
@@ -666,7 +667,7 @@ void TcpSession::SetCmdWBData(const std::vector<std::string>& Cmd)
             if (ParmName == "Act")
                 ActValue = std::stol(Cmd[i].substr(sizeof("Act")));
             else if (ParmName == "CFreq")
-                CenterFreq = std::stol(Cmd[i].substr(sizeof("CFreq"))) / 1000;
+                CenterFreq = std::stoul(Cmd[i].substr(sizeof("CFreq"))) / 1000;
         }
     }
 
@@ -677,16 +678,15 @@ void TcpSession::SetCmdWBData(const std::vector<std::string>& Cmd)
         CmdCX.StopCenterFreq = CenterFreq;
         std::cout << "CenterFreq: " << CenterFreq << std::endl;
         CmdCX.StateMachine = 1;
-        CmdCX.RFAttenuation = 30;
-        CmdCX.MFAttenuation = 2;
-        CmdCX.CorrectAttenuation = 10;
-        CmdCX.CorrectMode = 0;
+        CmdCX.RFAttenuation = 10;
+        CmdCX.MFAttenuation = 0;
+        CmdCX.CorrectMode = 1;
         CmdCX.SendCXCmd();
         std::this_thread::sleep_for(std::chrono::milliseconds(10 * g_Parameter.Smooth));
 
         CmdCX.RFAttenuation = g_Parameter.RFAttenuation;
         CmdCX.MFAttenuation = g_Parameter.MFAttenuation;
-        CmdCX.CorrectMode = 1;
+        CmdCX.CorrectMode = 0;
         CmdCX.SendCXCmd();
         g_Parameter.SetCmd(CmdCX.StartCenterFreq, CmdCX.StopCenterFreq, CmdCX.Resolution, TaskValue, 0);
         g_Parameter.SetFixedCXResult(TaskValue, CmdCX.StartCenterFreq, CmdCX.Resolution);
@@ -708,7 +708,7 @@ void TcpSession::SetCmdWBData(const std::vector<std::string>& Cmd)
 
 void TcpSession::SetCmdSweepData(const std::vector<std::string>& Cmd)
 {
-    int ActValue = 3, StartFreq = 0, StopFreq = 0;
+    unsigned int ActValue = 3, StartFreq = 0, StopFreq = 0;
     for (size_t n = Cmd.size(), i = 3; i < n; ++i)
     {
         auto index = Cmd[i].find_first_of(':');
@@ -718,9 +718,9 @@ void TcpSession::SetCmdSweepData(const std::vector<std::string>& Cmd)
             if (ParmName == "Act")
                 ActValue = std::stol(Cmd[i].substr(sizeof("Act")));
             else if (ParmName == "SFreq")
-                StartFreq = std::stol(Cmd[i].substr(sizeof("SFreq"))) / 1000;
+                StartFreq = std::stoul(Cmd[i].substr(sizeof("SFreq"))) / 1000;
             else if (ParmName == "EFreq")
-                StopFreq = std::stol(Cmd[i].substr(sizeof("EFreq"))) / 1000;
+                StopFreq = std::stoul(Cmd[i].substr(sizeof("EFreq"))) / 1000;
         }
     }
 
@@ -751,16 +751,15 @@ void TcpSession::SetCmdSweepData(const std::vector<std::string>& Cmd)
         CmdCX.StopCenterFreq = stopCenterFreq;
         std::cout << "StartFreq: " << startCenterFreq << " StopFreq: " << stopCenterFreq << std::endl;
         CmdCX.StateMachine = 1;
-        CmdCX.RFAttenuation = 30;
-        CmdCX.MFAttenuation = 2;
-        CmdCX.CorrectAttenuation = 10;
-        CmdCX.CorrectMode = 0;
+        CmdCX.RFAttenuation = 10;
+        CmdCX.MFAttenuation = 0;
+        CmdCX.CorrectMode = 1;
         CmdCX.SendCXCmd();
         std::this_thread::sleep_for(std::chrono::milliseconds(160 * g_Parameter.Smooth));
 
         CmdCX.RFAttenuation = g_Parameter.RFAttenuation;
         CmdCX.MFAttenuation = g_Parameter.MFAttenuation;
-        CmdCX.CorrectMode = 1;
+        CmdCX.CorrectMode = 0;
         CmdCX.SendCXCmd();
         g_Parameter.SetSweepCXResult(TaskValue, CmdCX.StartCenterFreq, CmdCX.StopCenterFreq, CmdCX.Resolution);
     };
@@ -787,7 +786,7 @@ void TcpSession::SetCmdSweepData(const std::vector<std::string>& Cmd)
 
 void TcpSession::SetCmdTestData(const std::vector<std::string>& Cmd)
 {
-    int ActValue = 3, CenterFreq = 0, mode = 0, scope = 0;
+    unsigned int ActValue = 3, CenterFreq = 0, mode = 0, scope = 0;
     for (size_t n = Cmd.size(), i = 3; i < n; ++i)
     {
         auto index = Cmd[i].find_first_of(':');
@@ -797,7 +796,7 @@ void TcpSession::SetCmdTestData(const std::vector<std::string>& Cmd)
             if (ParmName == "Act")
                 ActValue = std::stol(Cmd[i].substr(sizeof("Act")));
             else if (ParmName == "CFreq")
-                CenterFreq = std::stol(Cmd[i].substr(sizeof("CFreq"))) / 1000;
+                CenterFreq = std::stoul(Cmd[i].substr(sizeof("CFreq"))) / 1000;
             else if (ParmName == "Mode")
                 mode = std::stol(Cmd[i].substr(sizeof("Mode")));
             else if (ParmName == "Scope")
@@ -813,16 +812,15 @@ void TcpSession::SetCmdTestData(const std::vector<std::string>& Cmd)
         CmdCX.StopCenterFreq = CenterFreq;
         std::cout << "StartFreq: " << CenterFreq << " StopFreq: " << CenterFreq << std::endl;
         CmdCX.StateMachine = 2;
-        CmdCX.RFAttenuation = 30;
-        CmdCX.MFAttenuation = 2;
-        CmdCX.CorrectAttenuation = 10;
-        CmdCX.CorrectMode = 0;
+        CmdCX.RFAttenuation = 10;
+        CmdCX.MFAttenuation = 0;
+        CmdCX.CorrectMode = 1;
         CmdCX.SendCXCmd();
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
         
         CmdCX.RFAttenuation = g_Parameter.RFAttenuation;
         CmdCX.MFAttenuation = g_Parameter.MFAttenuation;
-        CmdCX.CorrectMode = 1;
+        CmdCX.CorrectMode = 0;
         CmdCX.SendCXCmd();
         g_Parameter.SetTestCXResult(TaskValue, CmdCX.StartCenterFreq, CmdCX.Resolution);
         StartRevDataWork();
@@ -856,7 +854,7 @@ void TcpSession::SetCmdNBReceiver(const std::vector<std::string>& Cmd)
             auto ParmName = Cmd[i].substr(0, index);
             if (ParmName == "Freq")
             {
-                auto Freq = std::stol(Cmd[i].substr(sizeof("Freq")));
+                auto Freq = std::stoul(Cmd[i].substr(sizeof("Freq")));
                 CmdZC.CmdRF.RfType = 1;
                 CmdZC.CmdRF.RfData = Freq;
                 g_Parameter.NbCenterFreqRF = Freq / 1e3;
@@ -884,7 +882,7 @@ void TcpSession::SetCmdNBChannel(const std::vector<std::string>& Cmd)
             }
             else if (ParmName == "Freq")
             {
-                auto Freq = std::stol(Cmd[i].substr(sizeof("Freq")));
+                auto Freq = std::stoul(Cmd[i].substr(sizeof("Freq")));
                 CmdZC.CmdNB.DDS = std::round(std::pow(2, 32) * (Freq - g_Parameter.NbCenterFreqRF) / 250000);
                 g_Parameter.SetNBWaveResultFrequency(CmdZC.CmdNB.Channel, Freq * 1000);
             }

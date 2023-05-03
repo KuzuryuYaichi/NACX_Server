@@ -7,9 +7,9 @@
 #include "StructDatas.h"
 
 extern PARAMETER_SET g_Parameter;
-extern threadsafe_queue<std::shared_ptr<Struct_Datas<StructDataZC>>> tsqueueZCs;
+extern threadsafe_queue<std::unique_ptr<Struct_Datas<StructDataZC>>> tsqueueZCs;
 
-void TcpSocket::NBZCDataReplay(const StructNBWaveZCResult& ReplayParm, std::shared_ptr<StructNetData>& res, size_t Datalen, unsigned char Channel)
+void TcpSocket::NBZCDataReplay(const StructNBWaveZCResult& ReplayParm, const std::unique_ptr<StructNetData>& res, size_t Datalen, unsigned char Channel)
 {
     DataHeadToByte(0x0602, Datalen, res->data, Channel);
     *(StructNBWaveZCResult*)(res->data + sizeof(DataHead)) = ReplayParm;
@@ -23,7 +23,7 @@ void DataDealZC(TcpSocket& socket)
     {
         static constexpr auto MAX_CHANNEL = 16;
         static unsigned char PackIndexAll[MAX_CHANNEL] = { 0 };
-        static std::shared_ptr<StructNetData> resAll[MAX_CHANNEL] = { nullptr };
+        static std::unique_ptr<StructNetData> resAll[MAX_CHANNEL] = { nullptr };
 
         if (recvData.ChannelNo < 0 || recvData.ChannelNo >= MAX_CHANNEL)
             return;
@@ -33,7 +33,7 @@ void DataDealZC(TcpSocket& socket)
 
         if (PackIndex == 0 || res == nullptr)
         {
-            res = std::make_shared<StructNetData>(0, DataLen);
+            res = std::make_unique<StructNetData>(0, DataLen);
         }
 
         auto& NBWaveCXResult = g_Parameter.NBWaveZCResult[recvData.ChannelNo];

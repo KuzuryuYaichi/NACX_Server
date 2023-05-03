@@ -46,7 +46,7 @@ void TcpSocket::Run()
     ioService.run();
 }
 
-void TcpSocket::SendMsg(std::shared_ptr<StructNetData> data)
+void TcpSocket::SendMsg(const std::unique_ptr<StructNetData>& data)
 {
     std::lock_guard<std::mutex> lk(SessionSetMutex);
     for (auto& session : SessionSet)

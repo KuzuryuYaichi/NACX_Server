@@ -37,8 +37,8 @@
 
 #endif
 
-typedef void (Q_DECL_STDCALL *P_CXDATA_CALLBACK)(std::shared_ptr<Struct_Datas<StructDataCX>>&);
-typedef void (Q_DECL_STDCALL *P_ZCDATA_CALLBACK)(std::shared_ptr<Struct_Datas<StructDataZC>>&);
+typedef void (Q_DECL_STDCALL *P_CXDATA_CALLBACK)(std::unique_ptr<Struct_Datas<StructDataCX>>&);
+typedef void (Q_DECL_STDCALL *P_ZCDATA_CALLBACK)(std::unique_ptr<Struct_Datas<StructDataZC>>&);
 
 #if defined(XDMA_PCIE_LIBRARY)
 #  define XDMA_PCIE_EXPORT Q_DECL_EXPORT

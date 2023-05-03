@@ -19,8 +19,8 @@ public:
 	TcpSession& operator=(TcpSession&&) = default;
 	~TcpSession();
 	void read();
-	void write(std::shared_ptr<StructNetData>);
-	void RecvCommandFun(std::shared_ptr<Order>);
+	void write(const std::unique_ptr<StructNetData>&);
+	void RecvCommandFun(const std::unique_ptr<Order>&);
 	void AddToSet();
 	void RemoveFromSet();
 	bool SendState = true;

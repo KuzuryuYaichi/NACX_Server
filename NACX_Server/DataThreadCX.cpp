@@ -8,7 +8,7 @@
 #include <numbers>
 
 extern PARAMETER_SET g_Parameter;
-extern threadsafe_queue<std::shared_ptr<Struct_Datas<StructDataCX>>> tsqueueCXs;
+extern threadsafe_queue<std::unique_ptr<Struct_Datas<StructDataCX>>> tsqueueCXs;
 
 std::chrono::time_point<std::chrono::system_clock> TimeStampToDateTime(const unsigned char* time)
 {
@@ -32,7 +32,7 @@ std::chrono::time_point<std::chrono::system_clock> TimeStampToDateTime(const uns
         std::chrono::milliseconds(milliseconds);
 }
 
-void TcpSocket::FixedCXDataReplay(const StructFixedCXResult& ReplayParm, std::shared_ptr<StructNetData>& res, size_t Datalen, unsigned short PackNum)
+void TcpSocket::FixedCXDataReplay(const StructFixedCXResult& ReplayParm, const std::unique_ptr<StructNetData>& res, size_t Datalen, unsigned short PackNum)
 {
     DataHeadToByte(0x0515, Datalen, res->data, PackNum);
     *(StructFixedCXResult*)(res->data + sizeof(DataHead)) = ReplayParm;
@@ -40,7 +40,7 @@ void TcpSocket::FixedCXDataReplay(const StructFixedCXResult& ReplayParm, std::sh
     SendMsg(res);
 }
 
-void TcpSocket::FixedCXDataReplay(const StructFixedCXResult& ReplayParm, std::shared_ptr<StructNetData>& res, size_t Datalen)
+void TcpSocket::FixedCXDataReplay(const StructFixedCXResult& ReplayParm, const std::unique_ptr<StructNetData>& res, size_t Datalen)
 {
     DataHeadToByte(0x0515, Datalen, res->data);
     *(StructFixedCXResult*)(res->data + sizeof(DataHead)) = ReplayParm;
@@ -48,7 +48,7 @@ void TcpSocket::FixedCXDataReplay(const StructFixedCXResult& ReplayParm, std::sh
     SendMsg(res);
 }
 
-void TcpSocket::NBCXDataReplay(const StructNBCXResult& ReplayParm, std::shared_ptr<StructNetData>& res, size_t Datalen)
+void TcpSocket::NBCXDataReplay(const StructNBCXResult& ReplayParm, const std::unique_ptr<StructNetData>& res, size_t Datalen)
 {
     DataHeadToByte(0x0514, Datalen, res->data);
     *(StructNBCXResult*)(res->data + sizeof(DataHead)) = ReplayParm;
@@ -56,7 +56,7 @@ void TcpSocket::NBCXDataReplay(const StructNBCXResult& ReplayParm, std::shared_p
     SendMsg(res);
 }
 
-void TcpSocket::SweepCXDataReplay(const StructSweepCXResult& ReplayParm, std::shared_ptr<StructNetData>& res, size_t Datalen)
+void TcpSocket::SweepCXDataReplay(const StructSweepCXResult& ReplayParm, const std::unique_ptr<StructNetData>& res, size_t Datalen)
 {
     DataHeadToByte(0x0513, Datalen, res->data);
     *(StructSweepCXResult*)(res->data + sizeof(DataHead)) = ReplayParm;
@@ -64,7 +64,7 @@ void TcpSocket::SweepCXDataReplay(const StructSweepCXResult& ReplayParm, std::sh
     SendMsg(res);
 }
 
-void TcpSocket::TestCXDataReplay(const StructTestCXResult& ReplayParm, std::shared_ptr<StructNetData>& res, size_t Datalen)
+void TcpSocket::TestCXDataReplay(const StructTestCXResult& ReplayParm, const std::unique_ptr<StructNetData>& res, size_t Datalen)
 {
     DataHeadToByte(0x0516, Datalen, res->data);
     *(StructTestCXResult*)(res->data + sizeof(DataHead)) = ReplayParm;
@@ -84,6 +84,57 @@ float ResolveResolution(unsigned char Resolution)
     }
 }
 
+long long timeConvert(unsigned long long t)
+{
+    auto UnixTimeToFileTime = [](time_t tmUnixTime) -> long long
+    {
+        static constexpr long long EPOCH_DIFF = 116444736000000000; //FILETIME starts from 1601-01-01 UTC, epoch from 1970- 01-01
+        static constexpr long long RATE_DIFF = 10000000;
+        long long ll = tmUnixTime * RATE_DIFF + EPOCH_DIFF;
+
+        FILETIME FileTime;
+        FileTime.dwLowDateTime = (DWORD)ll;
+        FileTime.dwHighDateTime = ll >> 32;
+        return *(long long*)&FileTime;
+    };
+
+    auto year = (t >> 58) & 0xFF;
+    if (year < 23)
+        return UnixTimeToFileTime(time(nullptr));
+    year += 100;
+    unsigned long long month = 0;
+    int dayOffset = (t >> 49) & 0x1FF;
+    auto hour = (((t >> 48) & 0x1) ? 12 : 0) + ((t >> 44) & 0xF);
+    auto minute = (t >> 38) & 0x3F;
+    auto second = (t >> 32) & 0x3F;
+    int millisecond = (t & 0xFFFFFFFF) / 102.4;
+
+    static short MONTH_DAYS[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+    MONTH_DAYS[1] = ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0) ? 29 : 28;
+    for (month = 0; dayOffset > 0; ++month)
+    {
+        if (dayOffset - MONTH_DAYS[month] > 0)
+            dayOffset -= MONTH_DAYS[month];
+        else
+        {
+            ++month;
+            break;
+        }
+    }
+
+    std::tm tTime;
+    tTime.tm_year = 70 + year;
+    tTime.tm_mon = month - 1;
+    tTime.tm_mday = dayOffset;
+    //tTime.tm_yday = days;
+    //tTime.tm_wday = 0;
+    tTime.tm_hour = hour;
+    tTime.tm_min = minute;
+    tTime.tm_sec = second;
+
+    return UnixTimeToFileTime(std::mktime(&tTime));
+}
+
 void DataDealCX(TcpSocket& socket)
 {
     auto ToSelfCheck = [&](const StructDataCX& recvData)
@@ -97,13 +148,13 @@ void DataDealCX(TcpSocket& socket)
         auto Range = Data[LENGTH / 2].Range / 100 + 12;
         if (g_Parameter.isTestingInner != 0xF && recvData.WorkMode == 0 && recvData.CorrectMode == 0 && recvData.CentreFreq == 350000)
         {
-            g_Parameter.SelfTestInner[ch] = Range > 70;
+            g_Parameter.SelfTestInner[ch] = Range > 68;
             g_Parameter.isTestingInner |= 1 << ch;
             std::cout << "Inner Channel: " << ch << ", Range: " << Range << std::endl;
         }
         else if (g_Parameter.isTestingOuter != 0xF && recvData.WorkMode == 0 && recvData.CorrectMode == 1 && recvData.CentreFreq == 350000)
         {
-            g_Parameter.SelfTestOuter[ch] = Range > 70;
+            g_Parameter.SelfTestOuter[ch] = Range > 68;
             g_Parameter.isTestingOuter |= 1 << ch;
             std::cout << "Outer Channel: " << ch << ", Range: " << Range << std::endl;
         }
@@ -117,7 +168,7 @@ void DataDealCX(TcpSocket& socket)
         const auto CXPerDataLen = sizeof(long long) + sizeof(char) + sizeof(short) + sizeof(char) * NarrowCXResult.DataPoint,
             CXDataLen = NarrowCXResult.CXGroupNum * CXPerDataLen,
             DataLen = sizeof(DataHead) + sizeof(StructNBCXResult) + CXDataLen + sizeof(DataEnd);
-        auto res = std::make_shared<StructNetData>(0, DataLen);
+        auto res = std::make_unique<StructNetData>(0, DataLen);
 
         for (auto CXData = (char*)res->data + sizeof(DataHead) + sizeof(StructNBCXResult), end = CXData + CXDataLen; CXData < end; CXData += CXPerDataLen)
         {
@@ -145,11 +196,10 @@ void DataDealCX(TcpSocket& socket)
     auto ToFixedCXdata = [&](const StructDataCX& recvData)
     {
         auto& FixedCXResult = g_Parameter.FixedCXResult;
-        auto time = *(long long*)recvData.Time;
         const auto CXPerDataLen = sizeof(long long) + (sizeof(char) + sizeof(short)) * FixedCXResult.DataPoint,
             CXDataLen = FixedCXResult.CXGroupNum * CXPerDataLen,
             Datalen = sizeof(DataHead) + sizeof(StructFixedCXResult) + CXDataLen + sizeof(DataEnd);
-        auto res = std::make_shared<StructNetData>(0, Datalen);
+        auto res = std::make_unique<StructNetData>(0, Datalen);
 
         const auto LENGTH = FixedCXResult.DataPoint - 1;
         auto Data = recvData.DirectionRangeData;
@@ -159,10 +209,11 @@ void DataDealCX(TcpSocket& socket)
             auto& StartTime = *(long long*)start;
             auto Range = start + sizeof(long long);
             auto Direction = (short*)(Range + sizeof(char) * FixedCXResult.DataPoint);
-            StartTime = time;
+            StartTime = timeConvert(*(long long*)recvData.Time);
             for (int p = 0; p < LENGTH; ++p)
             {
-                Range[p] = Data[p].Range / 100 - 125;
+                Range[p] = std::max(Data[p].Range / 100 + 12, 0);
+                //Range[p] = Data[p].Range / 100 - 125;
                 Direction[p] = Data[p].Direction - 750;
             }
             Range[LENGTH] = Range[LENGTH - 1];
@@ -179,15 +230,15 @@ void DataDealCX(TcpSocket& socket)
         auto CXDataLen = sizeof(StructSweepTimeData) * SweepCXResult.TimeNum + sizeof(StructSweepRangeDirectionData) * SweepCXResult.CXResultPoint;
         auto DataLen = sizeof(DataHead) + sizeof(StructSweepCXResult) + CXDataLen + sizeof(DataEnd);
         
-        static std::shared_ptr<StructNetData> res = nullptr;
+        static std::unique_ptr<StructNetData> res = nullptr;
         auto packIndex = (int)(recvData.CentreFreq - SweepCXResult.StartFreq) / 20000;
         if (packIndex < 0 || packIndex >= SweepCXResult.TimeNum)
             return;
 
         if (packIndex == 0)
         {
-            SweepCXResult.StartTime = *(long long*)recvData.Time;
-            res = std::make_shared<StructNetData>(0, DataLen);
+            SweepCXResult.StartTime = timeConvert (*(long long*)recvData.Time);
+            res = std::make_unique<StructNetData>(0, DataLen);
         }
 
         if (res == nullptr || res->length != DataLen)
@@ -195,14 +246,15 @@ void DataDealCX(TcpSocket& socket)
         
         const auto TIME_START = (StructSweepTimeData*)(res->data + sizeof(DataHead) + sizeof(StructSweepCXResult));
         auto TimeStruct = TIME_START + packIndex;
-        TimeStruct->Time = *(long long*)recvData.Time;
+        TimeStruct->Time = timeConvert(*(long long*)recvData.Time);
         TimeStruct->StartFreq = recvData.CentreFreq - 10000;
         TimeStruct->StopFreq = recvData.CentreFreq + 10000;
         auto DataNet = ((StructSweepRangeDirectionData*)(TIME_START + SweepCXResult.TimeNum)) + packIndex * DataPoint;
         auto Data = recvData.DirectionRangeData;
         for (int p = 0; p < DataPoint; ++p)
         {
-            DataNet[p].Range = Data[p].Range / 100 - 125;
+            DataNet[p].Range = std::max(Data[p].Range / 100 + 12, 0);
+            //DataNet[p].Range = Data[p].Range / 100 - 125;
             DataNet[p].Direction = Data[p].Direction - 750;
         }
         if (packIndex == SweepCXResult.TimeNum - 1)
@@ -216,7 +268,7 @@ void DataDealCX(TcpSocket& socket)
     auto ToChdata = [&](const StructDataCX& recvData)
     {
         static unsigned char last_PackNum = 0;
-        static std::shared_ptr<StructNetData> res = nullptr;
+        static std::unique_ptr<StructNetData> res = nullptr;
 
         auto& TestCXResult = g_Parameter.TestCXResult;
         const auto CXPerDataLen = sizeof(char) * TestCXResult.ChNum * TestCXResult.DataPoint + sizeof(short) * (TestCXResult.ChNum - 1) * TestCXResult.DataPoint,
@@ -226,7 +278,7 @@ void DataDealCX(TcpSocket& socket)
         auto ch = recvData.DataType - 1;
         if (ch == 0)
         {
-            res = std::make_shared<StructNetData>(0, DataLen);
+            res = std::make_unique<StructNetData>(0, DataLen);
             last_PackNum = recvData.l_PackNum;
         }
         else if (res == nullptr || res->length != DataLen || ch != 0 && recvData.l_PackNum != last_PackNum)
@@ -251,7 +303,7 @@ void DataDealCX(TcpSocket& socket)
                 auto Phase = PhaseBase + (ch - 1) * TestCXResult.DataPoint;
                 for (int p = 0; p < LENGTH; ++p)
                 {
-                    Range[p] = (unsigned char)(Data[p].Range / 100) + 12;
+                    Range[p] = std::max(Data[p].Range / 100 + 12, 0);
                     Phase[p] = ((double)Data[p].Phase) * 1800 / std::numbers::pi / 8192;
                 }
                 Range[LENGTH] = Range[LENGTH - 1];
@@ -264,7 +316,7 @@ void DataDealCX(TcpSocket& socket)
             {
                 for (int p = 0; p < LENGTH; ++p)
                 {
-                    Range[p] = (unsigned char)(Data[p].Range / 100) + 12;
+                    Range[p] = std::max(Data[p].Range / 100 + 12, 0);
                 }
                 Range[LENGTH] = Range[LENGTH - 1];
                 Range += TestCXResult.DataPoint;

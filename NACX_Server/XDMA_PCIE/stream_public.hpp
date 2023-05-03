@@ -43,7 +43,7 @@ void ThreadProcDataCX(xdma_device& dev, P_CXDATA_CALLBACK& CallBack, int channel
     while (isRunning)
     {
         size_t bytes_remaining = BLOCK_LEN;
-        auto ptr = std::make_shared<Struct_Datas<StructDataCX>>(PACK_NUM);
+        auto ptr = std::make_unique<Struct_Datas<StructDataCX>>(PACK_NUM);
         auto buffer = (char*)ptr->ptr;
         try
         {
@@ -76,7 +76,7 @@ void ThreadProcDataZC(xdma_device& dev, P_ZCDATA_CALLBACK& CallBack, int channel
     while (isRunning)
     {
         size_t bytes_remaining = BLOCK_LEN;
-        auto ptr = std::make_shared<Struct_Datas<StructDataZC>>(PACK_NUM);
+        auto ptr = std::make_unique<Struct_Datas<StructDataZC>>(PACK_NUM);
         auto buffer = (char*)ptr->ptr;
         try
         {

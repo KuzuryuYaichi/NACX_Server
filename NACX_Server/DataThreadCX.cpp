@@ -146,13 +146,13 @@ void DataDealCX(TcpSocket& socket)
         auto Data = recvData.RangePhaseData;
         
         auto Range = Data[LENGTH / 2].Range / 100 + 12;
-        if (g_Parameter.isTestingInner != 0xF && recvData.WorkMode == 0 && recvData.CorrectMode == 0 && recvData.CentreFreq == 350000)
+        if (g_Parameter.isTestingInner != g_Parameter.CALC_MASK() && recvData.WorkMode == 0 && recvData.CorrectMode == 0 && recvData.CentreFreq == 350000)
         {
             g_Parameter.SelfTestInner[ch] = Range > 68;
             g_Parameter.isTestingInner |= 1 << ch;
             std::cout << "Inner Channel: " << ch << ", Range: " << Range << std::endl;
         }
-        else if (g_Parameter.isTestingOuter != 0xF && recvData.WorkMode == 0 && recvData.CorrectMode == 1 && recvData.CentreFreq == 350000)
+        else if (g_Parameter.isTestingOuter != g_Parameter.CALC_MASK() && recvData.WorkMode == 0 && recvData.CorrectMode == 1 && recvData.CentreFreq == 350000)
         {
             g_Parameter.SelfTestOuter[ch] = Range > 68;
             g_Parameter.isTestingOuter |= 1 << ch;
@@ -193,6 +193,8 @@ void DataDealCX(TcpSocket& socket)
         socket.NBCXDataReplay(NarrowCXResult, res, DataLen);
     };
 
+    static constexpr int BASE_DIRECTION = 131.5 * 10;
+
     auto ToFixedCXdata = [&](const StructDataCX& recvData)
     {
         auto& FixedCXResult = g_Parameter.FixedCXResult;
@@ -214,7 +216,7 @@ void DataDealCX(TcpSocket& socket)
             {
                 Range[p] = std::max(Data[p].Range / 100 + 12, 0);
                 //Range[p] = Data[p].Range / 100 - 125;
-                Direction[p] = Data[p].Direction - 750;
+                Direction[p] = BASE_DIRECTION - (Data[p].Direction - 750);
             }
             Range[LENGTH] = Range[LENGTH - 1];
             Direction[LENGTH] = Direction[LENGTH - 1];
@@ -255,7 +257,7 @@ void DataDealCX(TcpSocket& socket)
         {
             DataNet[p].Range = std::max(Data[p].Range / 100 + 12, 0);
             //DataNet[p].Range = Data[p].Range / 100 - 125;
-            DataNet[p].Direction = Data[p].Direction - 750;
+            DataNet[p].Direction = BASE_DIRECTION - (Data[p].Direction - 750);
         }
         if (packIndex == SweepCXResult.TimeNum - 1)
         {

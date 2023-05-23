@@ -20,8 +20,6 @@ TinyConfig::TinyConfig(const std::string& fileName): fileName(fileName),
 		ofstream << "LocalIP = " << DEFAULT_LOCAL_DATA_IP << std::endl;
 		ofstream << "[" << Data_Area << "]" << std::endl;
 		ofstream << "DataPort = " << DEFAULT_LOCAL_DATA_PORT << std::endl;
-		ofstream << "[" << Order_Area << "]" << std::endl;
-		ofstream << "OrderPort = " << DEFAULT_LOCAL_ORDER_PORT << std::endl;
 		ofstream.close();
 	}
 }
@@ -40,12 +38,4 @@ const unsigned short& TinyConfig::Get_DataPort()
 	boost::property_tree::ini_parser::read_ini(ConfigFilePath + fileName, root_node);
 	auto tag = root_node.get_child(Data_Area);
 	return DataPort = tag.get<unsigned short>("DataPort");
-}
-
-const unsigned short& TinyConfig::Get_OrderPort()
-{
-	boost::property_tree::ptree root_node;
-	boost::property_tree::ini_parser::read_ini(ConfigFilePath + fileName, root_node);
-	auto tag = root_node.get_child(Order_Area);
-	return OrderPort = tag.get<unsigned short>("OrderPort");
 }

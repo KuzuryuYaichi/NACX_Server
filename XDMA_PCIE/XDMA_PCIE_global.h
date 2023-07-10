@@ -2,8 +2,8 @@
 #define XDMA_PCIE_GLOBAL_H
 
 #include <memory>
-#include "../StructData.h"
-#include "../StructDatas.h"
+#include "../NACX_Server/StructData.h"
+#include "../NACX_Server/StructDatas.h"
 
 #if defined(_MSC_VER) || defined(WIN64) || defined(_WIN64) || defined(__WIN64__) || defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
 

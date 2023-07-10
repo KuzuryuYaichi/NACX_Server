@@ -1,6 +1,4 @@
-#include "DataThread.h"
 #include "StructNetData.h"
-#include "XDMA_PCIE/dllexport.h"
 #include "TcpSocket.h"
 #include "ThreadSafeQueue.h"
 #include "StructData.h"

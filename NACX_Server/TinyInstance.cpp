@@ -1,5 +1,5 @@
 #include "TinyInstance.h"
-#include "XDMA_PCIE/dllexport.h"
+#include "../XDMA_PCIE/dllexport.h"
 #include "dllImport.h"
 #include "DataThread.h"
 

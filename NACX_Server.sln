@@ -1,11 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.32630.194
+# Visual Studio Version 17
+VisualStudioVersion = 17.6.33815.320
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NACX_Server", "NACX_Server\NACX_Server.vcxproj", "{DBDFA1C2-852B-4B3D-A9C1-AA67BC9DE82F}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "XDMA_PCIE", "NACX_Server\XDMA_PCIE\XDMA_PCIE.vcxproj", "{AA043851-01AA-40D7-8937-467085605514}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "XDMA_PCIE", "..\..\DBXXH\DBXXH_Server\XDMA_PCIE\XDMA_PCIE.vcxproj", "{AA043851-01AA-40D7-8937-467085605514}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -25,6 +25,7 @@ Global
 		{AA043851-01AA-40D7-8937-467085605514}.Debug|x64.ActiveCfg = Debug|x64
 		{AA043851-01AA-40D7-8937-467085605514}.Debug|x64.Build.0 = Debug|x64
 		{AA043851-01AA-40D7-8937-467085605514}.Debug|x86.ActiveCfg = Debug|Win32
+		{AA043851-01AA-40D7-8937-467085605514}.Debug|x86.Build.0 = Debug|Win32
 		{AA043851-01AA-40D7-8937-467085605514}.Release|x64.ActiveCfg = Release|x64
 		{AA043851-01AA-40D7-8937-467085605514}.Release|x64.Build.0 = Release|x64
 		{AA043851-01AA-40D7-8937-467085605514}.Release|x86.ActiveCfg = Release|Win32

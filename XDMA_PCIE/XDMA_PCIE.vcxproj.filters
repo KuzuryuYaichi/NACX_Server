@@ -15,75 +15,42 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DataThread.h">
+    <ClInclude Include="xdma_public_win.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="dllImport.h">
+    <ClInclude Include="stream_dma_win.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="StructData.h">
+    <ClInclude Include="XDMA_PCIE_global.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="StructDatas.h">
+    <ClInclude Include="dllexport.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="StructNetData.h">
+    <ClInclude Include="struct_device_win.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="TcpSession.h">
+    <ClInclude Include="stream_public.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="TcpSocket.h">
+    <ClInclude Include="stream_dma_unix.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="ThreadSafeQueue.h">
+    <ClInclude Include="struct_device_unix.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="TinyConfig.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="TinyInstance.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="StructCmd.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="SerialPortSession.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="global.h">
+    <ClInclude Include="xdma_public_unix.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DataThreadCX.cpp">
+    <ClCompile Include="dllexport.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="DataThreadZC.cpp">
+    <ClCompile Include="struct_device_win.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="dllImport.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="main.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="StructNetData.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="TcpSession.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="TcpSocket.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="TinyConfig.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="TinyInstance.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="SerialPortSession.cpp">
+    <ClCompile Include="struct_device_unix.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

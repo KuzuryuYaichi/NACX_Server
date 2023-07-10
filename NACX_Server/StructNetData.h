@@ -5,6 +5,7 @@
 #include <mutex>
 #include <cmath>
 #include "StructData.h"
+#include "global.h"
 
 #pragma pack(1)
 
@@ -68,7 +69,7 @@ struct StructNBCXResult
     StructNBCXResult(const StructNBCXResult&) = default;
     StructNBCXResult& operator=(const StructNBCXResult&) = default;
 
-    void SetNBCXResult(unsigned int Task, int Freq, unsigned int Resolution, short DataPoint)
+    void SetNBCXResult(unsigned int Task, long long Freq, unsigned int Resolution, short DataPoint)
     {
         this->Task = Task;
         this->Freq = Freq;
@@ -103,29 +104,11 @@ struct StructFixedCXResult
     short CXType = 6;
     short CXResolution = 1;
     short CXGroupNum = 1;
-    short DataPoint = 20000 / FreqResolution + 1;
+    short DataPoint = BAND_WIDTH_KHZ / FreqResolution + 1;
 
     StructFixedCXResult() = default;
     StructFixedCXResult(const StructFixedCXResult&) = default;
     StructFixedCXResult& operator=(const StructFixedCXResult&) = default;
-
-    void SetFixedCXResult(unsigned int Task, int CenterFreq, unsigned int Resolution)
-    {
-        this->Task = Task;
-        this->CenterFreq = CenterFreq;
-        switch (Resolution)
-        {
-        case 10: FreqResolution = 25.0; break;
-        case 11: FreqResolution = 12.5; break;
-        case 12: FreqResolution = 6.25; break;
-        case 13: FreqResolution = 3.125; break;
-        default: break;
-        }
-        CXType = 6;
-        CXResolution = 1;
-        CXGroupNum = std::pow(2, 13 - Resolution);
-        DataPoint = 20000 / FreqResolution + 1;
-    }
 };
 
 struct StructTestCXResult
@@ -140,22 +123,6 @@ struct StructTestCXResult
     StructTestCXResult() = default;
     StructTestCXResult(const StructTestCXResult&) = default;
     StructTestCXResult& operator=(const StructTestCXResult&) = default;
-
-    void SetTestCXResult(unsigned int Task, int CenterFreq, unsigned int Resolution)
-    {
-        this->Task = Task;
-        this->CenterFreq = CenterFreq;
-        switch (Resolution)
-        {
-        case 10: FreqResolution = 25.0; break;
-        case 11: FreqResolution = 12.5; break;
-        case 12: FreqResolution = 6.25; break;
-        case 13: FreqResolution = 3.125; break;
-        default: break;
-        }
-        CXGroupNum = std::pow(2, 13 - Resolution);
-        DataPoint = 20000 / FreqResolution + 1;
-    }
 };
 
 struct StructNBWaveZCResult
@@ -232,32 +199,13 @@ struct StructSweepCXResult
     long long StartFreq;
     long long StopFreq;
     short CXType = 6;
-    short CXResolution;
+    short CXResolution = 1;
     int CXResultPoint;
     int TimeNum;
 
     StructSweepCXResult() = default;
     StructSweepCXResult(const StructSweepCXResult&) = default;
     StructSweepCXResult& operator=(const StructSweepCXResult&) = default;
-
-    void SetSweepResult(unsigned int Task, int StartFreq, int StopFreq, unsigned int Resolution)
-    {
-        this->Task = Task;
-        this->StartFreq = StartFreq;
-        this->StopFreq = StopFreq;
-        switch (Resolution)
-        {
-        case 10: FreqResolution = 25; break;
-        case 11: FreqResolution = 12.5; break;
-        case 12: FreqResolution = 6.25; break;
-        case 13: FreqResolution = 3.125; break;
-        default: break;
-        }
-        CXType = 6;
-        CXResolution = 1;
-        TimeNum = (StopFreq - StartFreq) / 20000 + 1;
-        CXResultPoint = 20000 / FreqResolution * TimeNum + 1;
-    }
 };
 
 struct StructSweepCXParam
@@ -342,22 +290,14 @@ struct PARAMETER_SET
     }
 
     unsigned char DeviceID[14];
-
-    char ScanSpeed = 4;
-    char StateMachine = 1;
-    int StartCenterFreq = 200000;
-    int StopCenterFreq = 200000;
-    unsigned int AntennaFreq = 530000;
+    long long StartCenterFreq = CENTER_FREQ_HZ;
+    long long StopCenterFreq = CENTER_FREQ_HZ;
     char RFAttenuation = 10;
     char MFAttenuation = 0;
     char RfMode = 0;
     char CorrectAttenuation = 15;
-    unsigned int DDS_CTRL = 0;
     char Resolution = 13;
-    char CorrectMode = 0;
     char Smooth = 1;
-    char FFT_SCH = 0;
-    unsigned short RfProtectTime = 2; // 1/SampleRate
 
     int NbCenterFreqRF;
 
@@ -369,53 +309,122 @@ struct PARAMETER_SET
         CX_SWEEP
     };
     DATA_TRANS DataType = CX_WB;
-    int CmdStartCenterFreq = 0;
-    int CmdStopCenterFreq = 0;
-    unsigned int CmdResolution = 0;
-    unsigned int CXmode = 0;
-    unsigned int CmdTask = 0;
 
     std::mutex ParameterMutex;
-    void SetCmd(int CmdStartCenterFreq, int CmdStopCenterFreq, unsigned int CmdResolution, unsigned int CmdTask, unsigned int CXmode)
+    void SetCmd(long long CmdStartCenterFreq, long long CmdStopCenterFreq)
     {
         std::lock_guard<std::mutex> lock(ParameterMutex);
-        this->CmdStartCenterFreq = this->StartCenterFreq = CmdStartCenterFreq;
-        this->CmdStopCenterFreq = this->StopCenterFreq = CmdStopCenterFreq;
-        this->CmdResolution = CmdResolution;
-        this->CXmode = CXmode;
-        this->CmdTask = CmdTask;
+        this->StartCenterFreq = CmdStartCenterFreq;
+        this->StopCenterFreq = CmdStopCenterFreq;
     }
 
     std::mutex FixedCXMutex;
     StructFixedCXResult FixedCXResult;
-    void SetFixedCXResult(unsigned int Task, int CenterFreq, unsigned int Resolution)
+    void SetFixedCXResult(unsigned int Task, long long CenterFreq)
     {
         std::lock_guard<std::mutex> lock(FixedCXMutex);
-        FixedCXResult.SetFixedCXResult(Task, CenterFreq, Resolution);
+        FixedCXResult.Task = Task;
+        FixedCXResult.CenterFreq = CenterFreq;
+        
+    }
+    void SetFixedCXResult(unsigned int Task, unsigned int Resolution)
+    {
+        std::lock_guard<std::mutex> lock(FixedCXMutex);
+        FixedCXResult.Task = Task;
+        switch (Resolution)
+        {
+        case 10: FixedCXResult.FreqResolution = 25.0; break;
+        case 11: FixedCXResult.FreqResolution = 12.5; break;
+        case 12: FixedCXResult.FreqResolution = 6.25; break;
+        case 13: FixedCXResult.FreqResolution = 3.125; break;
+        default: break;
+        }
+        FixedCXResult.CXType = 6;
+        FixedCXResult.CXResolution = 1;
+        FixedCXResult.CXGroupNum = std::pow(2, 13 - Resolution);
+        FixedCXResult.DataPoint = BAND_WIDTH_KHZ / FixedCXResult.FreqResolution + 1;
     }
 
     std::mutex NarrowMutex;
     StructNBCXResult NarrowCXResult;
-    void SetNBCXResult(unsigned int Task, int Freq, unsigned int Resolution, short DataPoint)
+    void SetNBCXResult(unsigned int Task, long long CenterFreq, unsigned int Resolution, short DataPoint)
     {
         std::lock_guard<std::mutex> lock(NarrowMutex);
-        NarrowCXResult.SetNBCXResult(Task, Freq, Resolution, DataPoint);
+        NarrowCXResult.SetNBCXResult(Task, CenterFreq, Resolution, DataPoint);
     }
 
     std::mutex SweepMutex;
     StructSweepCXResult SweepCXResult;
-    void SetSweepCXResult(unsigned int Task, int StartCenterFreq, int StopCenterFreq, unsigned int Resolution)
+    void SetSweepCXResult(unsigned int Task, long long StartCenterFreq, long long StopCenterFreq)
     {
         std::lock_guard<std::mutex> lock(SweepMutex);
-        SweepCXResult.SetSweepResult(Task, StartCenterFreq, StopCenterFreq, Resolution);
+        SweepCXResult.Task = Task;
+        SweepCXResult.StartFreq = StartCenterFreq;
+        SweepCXResult.StopFreq = StopCenterFreq;
+        switch (Resolution)
+        {
+        case 10: SweepCXResult.FreqResolution = 25; break;
+        case 11: SweepCXResult.FreqResolution = 12.5; break;
+        case 12: SweepCXResult.FreqResolution = 6.25; break;
+        case 13: SweepCXResult.FreqResolution = 3.125; break;
+        default: break;
+        }
+        SweepCXResult.TimeNum = (SweepCXResult.StopFreq - SweepCXResult.StartFreq) / BAND_WIDTH_HZ + 1;
+        SweepCXResult.CXResultPoint = BAND_WIDTH_KHZ / SweepCXResult.FreqResolution * SweepCXResult.TimeNum + 1;
+    }
+    void SetSweepCXResult(unsigned int Task, unsigned int Resolution)
+    {
+        std::lock_guard<std::mutex> lock(SweepMutex);
+        SweepCXResult.Task = Task;
+        switch (Resolution)
+        {
+        case 10: SweepCXResult.FreqResolution = 25; break;
+        case 11: SweepCXResult.FreqResolution = 12.5; break;
+        case 12: SweepCXResult.FreqResolution = 6.25; break;
+        case 13: SweepCXResult.FreqResolution = 3.125; break;
+        default: break;
+        }
+        SweepCXResult.CXResultPoint = BAND_WIDTH_KHZ / SweepCXResult.FreqResolution * SweepCXResult.TimeNum + 1;
     }
 
     std::mutex TestMutex;
     StructTestCXResult TestCXResult;
-    void SetTestCXResult(unsigned int Task, int CenterFreq, unsigned int Resolution)
+    void SetTestCXResult(unsigned int Task, long long CenterFreq)
     {
         std::lock_guard<std::mutex> lock(TestMutex);
-        TestCXResult.SetTestCXResult(Task, CenterFreq, Resolution);
+        TestCXResult.Task = Task;
+        TestCXResult.CenterFreq = CenterFreq;
+    }
+    void SetTestCXResult(unsigned int Task, unsigned int Resolution)
+    {
+        std::lock_guard<std::mutex> lock(TestMutex);
+        TestCXResult.Task = Task;
+        switch (Resolution)
+        {
+        case 10: TestCXResult.FreqResolution = 25.0; break;
+        case 11: TestCXResult.FreqResolution = 12.5; break;
+        case 12: TestCXResult.FreqResolution = 6.25; break;
+        case 13: TestCXResult.FreqResolution = 3.125; break;
+        default: break;
+        }
+        TestCXResult.CXGroupNum = std::pow(2, 13 - Resolution);
+        TestCXResult.DataPoint = BAND_WIDTH_KHZ / TestCXResult.FreqResolution + 1;
+    }
+    void SetTestCXResult(unsigned int Task, long long CenterFreq, unsigned int Resolution)
+    {
+        std::lock_guard<std::mutex> lock(TestMutex);
+        TestCXResult.Task = Task;
+        TestCXResult.CenterFreq = CenterFreq;
+        switch (Resolution)
+        {
+        case 10: TestCXResult.FreqResolution = 25.0; break;
+        case 11: TestCXResult.FreqResolution = 12.5; break;
+        case 12: TestCXResult.FreqResolution = 6.25; break;
+        case 13: TestCXResult.FreqResolution = 3.125; break;
+        default: break;
+        }
+        TestCXResult.CXGroupNum = std::pow(2, 13 - Resolution);
+        TestCXResult.DataPoint = BAND_WIDTH_KHZ / TestCXResult.FreqResolution + 1;
     }
 
     std::mutex NBWaveMutex;

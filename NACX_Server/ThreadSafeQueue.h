@@ -6,7 +6,7 @@
 #include <condition_variable>
 #include <initializer_list>
 
-template<typename T, size_t MAX_BUFFER_DEPTH = 1000000>
+template<typename T, size_t MAX_BUFFER_DEPTH = 10000>
 class threadsafe_queue
 {
 private:

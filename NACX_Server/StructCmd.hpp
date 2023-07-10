@@ -5,7 +5,8 @@
 #include <fstream>
 #include <iostream>
 #include <cmath>
-#include "XDMA_PCIE/dllexport.h"
+#include "../XDMA_PCIE/dllexport.h"
+#include "global.h"
 
 #pragma pack(1)
 
@@ -46,8 +47,8 @@ struct StructCmdCX
     unsigned short Head = 0xAA55;
     char ScanSpeed = 4;
     char StateMachine = 0; // 2
-    int StartCenterFreq = 350000;
-    int StopCenterFreq = 350000;
+    int StartCenterFreq = CENTER_FREQ_KHZ;
+    int StopCenterFreq = CENTER_FREQ_KHZ;
     unsigned int AntennaFreq = 530000;
     char RFAttenuation = 10;
     char MFAttenuation = 0;
@@ -72,7 +73,10 @@ struct StructCmdCX
     {
         const std::string SAMPLE_PATH = "Sample/RealSample.dat";
         if (!std::filesystem::exists(SAMPLE_PATH))
+        {
+            std::cout << "Sample File Not Find!" << std::endl;
             return;
+        }
         try
         {
             std::ifstream stream(std::filesystem::current_path().generic_string() + "/" + SAMPLE_PATH, std::ios_base::in | std::ios_base::binary);

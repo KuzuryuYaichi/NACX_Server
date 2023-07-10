@@ -1,6 +1,4 @@
-#include "DataThread.h"
 #include "StructNetData.h"
-#include "XDMA_PCIE/dllexport.h"
 #include "TcpSocket.h"
 #include "ThreadSafeQueue.h"
 #include "StructData.h"
@@ -9,28 +7,6 @@
 
 extern PARAMETER_SET g_Parameter;
 extern threadsafe_queue<std::unique_ptr<Struct_Datas<StructDataCX>>> tsqueueCXs;
-
-std::chrono::time_point<std::chrono::system_clock> TimeStampToDateTime(const unsigned char* time)
-{
-    unsigned long fractpart = 0;
-    for (int i = 0; i < 4; ++i)
-    {
-        fractpart = (fractpart << 8) + time[i];
-    }
-    fractpart &= ~(1 << 31);
-    int milliseconds = fractpart / 204800;
-    int seconds = ((time[3] >> 6) & 0xff) + ((time[4] << 2) & 0x3c);
-    int minutes = ((time[4] >> 4) & 0xff) + ((time[5] << 4) & 0x30);
-    int hours = (time[5] >> 2) & 0x1f;
-    int days = ((time[5] >> 7) & 0xff) + ((time[6] & 0xffff) << 1) - 1;
-
-    return std::chrono::system_clock::time_point() +
-        std::chrono::days(days) +
-        std::chrono::hours(hours) +
-        std::chrono::minutes(minutes) +
-        std::chrono::seconds(seconds) +
-        std::chrono::milliseconds(milliseconds);
-}
 
 void TcpSocket::FixedCXDataReplay(const StructFixedCXResult& ReplayParm, const std::unique_ptr<StructNetData>& res, size_t Datalen, unsigned short PackNum)
 {
@@ -164,7 +140,6 @@ void DataDealCX(TcpSocket& socket)
     {
         auto& NarrowCXResult = g_Parameter.NarrowCXResult;
         auto Data = recvData.DirectionRangeData;
-        auto time = std::chrono::duration_cast<std::chrono::milliseconds>(TimeStampToDateTime(recvData.Time).time_since_epoch()).count();
         const auto CXPerDataLen = sizeof(long long) + sizeof(char) + sizeof(short) + sizeof(char) * NarrowCXResult.DataPoint,
             CXDataLen = NarrowCXResult.CXGroupNum * CXPerDataLen,
             DataLen = sizeof(DataHead) + sizeof(StructNBCXResult) + CXDataLen + sizeof(DataEnd);
@@ -172,11 +147,10 @@ void DataDealCX(TcpSocket& socket)
 
         for (auto CXData = (char*)res->data + sizeof(DataHead) + sizeof(StructNBCXResult), end = CXData + CXDataLen; CXData < end; CXData += CXPerDataLen)
         {
-            auto& StartTime = *(long long*)CXData;
+            *(long long*)CXData = timeConvert(*(long long*)recvData.Time);
             auto& Range = *(CXData + sizeof(long long));
             auto& Directivity = *(short*)(Range + sizeof(char));
             auto Ranges = ((char*)Directivity) + sizeof(short);
-            StartTime = time;
 
             auto mid = NarrowCXResult.DataPoint / 2;
             Range = 20 * std::log10(Data[mid].Range) + 40;
@@ -192,8 +166,6 @@ void DataDealCX(TcpSocket& socket)
         }
         socket.NBCXDataReplay(NarrowCXResult, res, DataLen);
     };
-
-    static constexpr int BASE_DIRECTION = 131.5 * 10;
 
     auto ToFixedCXdata = [&](const StructDataCX& recvData)
     {
@@ -228,12 +200,12 @@ void DataDealCX(TcpSocket& socket)
     auto ToSweepCXdata = [&](const StructDataCX& recvData)
     {
         auto& SweepCXResult = g_Parameter.SweepCXResult;
-        auto DataPoint = (int)(20000 / SweepCXResult.FreqResolution);
+        auto DataPoint = (int)(BAND_WIDTH_KHZ / SweepCXResult.FreqResolution);
         auto CXDataLen = sizeof(StructSweepTimeData) * SweepCXResult.TimeNum + sizeof(StructSweepRangeDirectionData) * SweepCXResult.CXResultPoint;
         auto DataLen = sizeof(DataHead) + sizeof(StructSweepCXResult) + CXDataLen + sizeof(DataEnd);
         
         static std::unique_ptr<StructNetData> res = nullptr;
-        auto packIndex = (int)(recvData.CentreFreq - SweepCXResult.StartFreq) / 20000;
+        auto packIndex = (int)(recvData.CentreFreq * 1e3 - SweepCXResult.StartFreq) / BAND_WIDTH_HZ;
         if (packIndex < 0 || packIndex >= SweepCXResult.TimeNum)
             return;
 
@@ -249,8 +221,8 @@ void DataDealCX(TcpSocket& socket)
         const auto TIME_START = (StructSweepTimeData*)(res->data + sizeof(DataHead) + sizeof(StructSweepCXResult));
         auto TimeStruct = TIME_START + packIndex;
         TimeStruct->Time = timeConvert(*(long long*)recvData.Time);
-        TimeStruct->StartFreq = recvData.CentreFreq - 10000;
-        TimeStruct->StopFreq = recvData.CentreFreq + 10000;
+        TimeStruct->StartFreq = recvData.CentreFreq - HALF_BAND_WIDTH_KHZ;
+        TimeStruct->StopFreq = recvData.CentreFreq + HALF_BAND_WIDTH_KHZ;
         auto DataNet = ((StructSweepRangeDirectionData*)(TIME_START + SweepCXResult.TimeNum)) + packIndex * DataPoint;
         auto Data = recvData.DirectionRangeData;
         for (int p = 0; p < DataPoint; ++p)

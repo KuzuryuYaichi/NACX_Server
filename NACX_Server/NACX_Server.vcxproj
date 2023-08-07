@@ -159,6 +159,7 @@
     <ClInclude Include="TcpSocket.h" />
     <ClInclude Include="ThreadSafeQueue.h" />
     <ClInclude Include="TinyConfig.h" />
+    <ClInclude Include="TinyFileLock.h" />
     <ClInclude Include="TinyInstance.h" />
   </ItemGroup>
   <ItemGroup>
@@ -171,6 +172,7 @@
     <ClCompile Include="TcpSession.cpp" />
     <ClCompile Include="TcpSocket.cpp" />
     <ClCompile Include="TinyConfig.cpp" />
+    <ClCompile Include="TinyFileLock.cpp" />
     <ClCompile Include="TinyInstance.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

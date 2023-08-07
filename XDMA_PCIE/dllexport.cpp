@@ -26,11 +26,11 @@ int OpenDevice()
 int CloseDevice()
 {
 	SetIsRunning(false);
-	if(CX_Thread.joinable())
+	if (CX_Thread.joinable())
 		CX_Thread.join();
-	if(ZC_Thread.joinable())
+	if (ZC_Thread.joinable())
 		ZC_Thread.join();
-	if(pdev != nullptr)
+	if (pdev != nullptr)
 		delete pdev;
     return 0;
 }

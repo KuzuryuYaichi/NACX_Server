@@ -10,6 +10,7 @@ class TinyInstance
 {
 public:
     TinyInstance();
+    ~TinyInstance();
     void join();
     
 private:
@@ -19,7 +20,6 @@ private:
 
     std::thread DataThreadCX;
     std::thread DataThreadZC;
-    //std::thread DataThreadOrder;
 
     void InitThread();
 };

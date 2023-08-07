@@ -3,7 +3,7 @@
 
 #include "TcpSocket.h"
 
-void DataDealCX(TcpSocket&);
+void DataDealCX(TcpSocket&, short);
 void DataDealZC(TcpSocket&);
 
 #endif // DATATHREAD_H

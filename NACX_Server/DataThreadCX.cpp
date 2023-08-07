@@ -111,7 +111,7 @@ long long timeConvert(unsigned long long t)
     return UnixTimeToFileTime(std::mktime(&tTime));
 }
 
-void DataDealCX(TcpSocket& socket)
+void DataDealCX(TcpSocket& socket, short BaseDirection)
 {
     auto ToSelfCheck = [&](const StructDataCX& recvData)
     {
@@ -187,8 +187,7 @@ void DataDealCX(TcpSocket& socket)
             for (int p = 0; p < LENGTH; ++p)
             {
                 Range[p] = std::max(Data[p].Range / 100 + 12, 0);
-                //Range[p] = Data[p].Range / 100 - 125;
-                Direction[p] = BASE_DIRECTION - (Data[p].Direction - 750);
+                Direction[p] = BaseDirection - (Data[p].Direction - 750);
             }
             Range[LENGTH] = Range[LENGTH - 1];
             Direction[LENGTH] = Direction[LENGTH - 1];
@@ -228,8 +227,7 @@ void DataDealCX(TcpSocket& socket)
         for (int p = 0; p < DataPoint; ++p)
         {
             DataNet[p].Range = std::max(Data[p].Range / 100 + 12, 0);
-            //DataNet[p].Range = Data[p].Range / 100 - 125;
-            DataNet[p].Direction = BASE_DIRECTION - (Data[p].Direction - 750);
+            DataNet[p].Direction = BaseDirection - (Data[p].Direction - 750);
         }
         if (packIndex == SweepCXResult.TimeNum - 1)
         {
@@ -357,7 +355,8 @@ void DataDealCX(TcpSocket& socket)
         auto ptr = tsqueueCXs.wait_and_pop();
         for (int i = 0; i < ptr->PACK_NUM; ++i)
         {
-            GetQueueDataFun(ptr->ptr[i]);
+            if (ptr->ptr[i].Head == 0xBAABDCCD)
+                GetQueueDataFun(ptr->ptr[i]);
         }
     }
 };

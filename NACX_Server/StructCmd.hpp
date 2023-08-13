@@ -50,8 +50,8 @@ struct StructCmdCX
     int StartCenterFreq = CENTER_FREQ_KHZ;
     int StopCenterFreq = CENTER_FREQ_KHZ;
     unsigned int AntennaFreq = 530000;
-    char RFAttenuation = 10;
-    char MFAttenuation = 0;
+    char RFAttenuation = 0;
+    char MFAttenuation = 10;
     char RfMode = 1;
     char CorrectAttenuation = 15;
     unsigned int DDS_CTRL = 0;

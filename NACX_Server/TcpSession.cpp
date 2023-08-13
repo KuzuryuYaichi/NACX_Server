@@ -343,8 +343,8 @@ void TcpSession::SelfCheck()
 
         CmdCX.StateMachine = 3;
         CmdCX.Resolution = 13;
-        CmdCX.RFAttenuation = 30;
-        CmdCX.MFAttenuation = 0;
+        CmdCX.RFAttenuation = 0;
+        CmdCX.MFAttenuation = 30;
         CmdCX.StartCenterFreq = CmdCX.StopCenterFreq = CENTER_FREQ_KHZ;
         CmdCX.CorrectMode = 0;
         CmdCX.SendCXCmd();
@@ -354,8 +354,8 @@ void TcpSession::SelfCheck()
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
         g_Parameter.isTestingInner = 0;
         while (g_Parameter.isTestingInner != PARAMETER_SET::CALC_MASK());
-        CmdCX.RFAttenuation = 10;
-        CmdCX.MFAttenuation = 0;
+        CmdCX.RFAttenuation = 0;
+        CmdCX.MFAttenuation = 10;
         CmdCX.CorrectMode = 1;
         CmdCX.SendCXCmd();
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -490,13 +490,13 @@ bool TcpSession::SetCmdCXParm(const std::vector<std::string>& Cmd)
                             std::cout << "GainType: MGC, GainValue: " << MGCvalue << std::endl;
                             if (MGCvalue < 30)
                             {
-                                CmdCX.RFAttenuation = g_Parameter.RFAttenuation = MGCvalue;
-                                CmdCX.MFAttenuation = g_Parameter.MFAttenuation = 0;
+                                CmdCX.MFAttenuation = g_Parameter.MFAttenuation = MGCvalue;
+                                CmdCX.RFAttenuation = g_Parameter.RFAttenuation = 0;
                             }
                             else
                             {
-                                CmdCX.RFAttenuation = g_Parameter.RFAttenuation = 30;
-                                CmdCX.MFAttenuation = g_Parameter.MFAttenuation = MGCvalue - 30;
+                                CmdCX.MFAttenuation = g_Parameter.MFAttenuation = 30;
+                                CmdCX.RFAttenuation = g_Parameter.RFAttenuation = MGCvalue - 30;
                             }
                         }
                         else
@@ -675,8 +675,8 @@ void TcpSession::SetCmdWBData(const std::vector<std::string>& Cmd)
         CmdCX.StartCenterFreq = CmdCX.StopCenterFreq = CenterFreq / 1e3;
         std::cout << "CenterFreq: " << CenterFreq << std::endl;
         CmdCX.StateMachine = 1;
-        CmdCX.RFAttenuation = 10;
-        CmdCX.MFAttenuation = 0;
+        CmdCX.RFAttenuation = 0;
+        CmdCX.MFAttenuation = 10;
         CmdCX.CorrectMode = 1;
         CmdCX.SendCXCmd();
         std::this_thread::sleep_for(std::chrono::milliseconds(10 * g_Parameter.Smooth));
@@ -746,8 +746,8 @@ void TcpSession::SetCmdSweepData(const std::vector<std::string>& Cmd)
         CmdCX.StopCenterFreq = StopCenterFreq / 1e3;
         std::cout << "StartFreq: " << StartCenterFreq << " StopFreq: " << StopCenterFreq << std::endl;
         CmdCX.StateMachine = 1;
-        CmdCX.RFAttenuation = 10;
-        CmdCX.MFAttenuation = 0;
+        CmdCX.RFAttenuation = 0;
+        CmdCX.MFAttenuation = 10;
         CmdCX.CorrectMode = 1;
         CmdCX.SendCXCmd();
         std::this_thread::sleep_for(std::chrono::milliseconds(160 * g_Parameter.Smooth));
@@ -808,8 +808,8 @@ void TcpSession::SetCmdTestData(const std::vector<std::string>& Cmd)
         CmdCX.StartCenterFreq = CmdCX.StopCenterFreq = CenterFreq / 1e3;
         std::cout << "StartFreq: " << CenterFreq << " StopFreq: " << CenterFreq << std::endl;
         CmdCX.StateMachine = 2;
-        CmdCX.RFAttenuation = 10;
-        CmdCX.MFAttenuation = 0;
+        CmdCX.RFAttenuation = 0;
+        CmdCX.MFAttenuation = 10;
         CmdCX.CorrectMode = 1;
         CmdCX.SendCXCmd();
         std::this_thread::sleep_for(std::chrono::milliseconds(10));

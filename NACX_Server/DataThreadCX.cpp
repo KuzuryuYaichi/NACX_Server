@@ -192,6 +192,7 @@ void DataDealCX(TcpSocket& socket, short BaseDirection)
             Range[LENGTH] = Range[LENGTH - 1];
             Direction[LENGTH] = Direction[LENGTH - 1];
             start += CXPerDataLen;
+            Data += LENGTH;
         }
         socket.FixedCXDataReplay(FixedCXResult, res, Datalen, recvData.PackNum);
     };
